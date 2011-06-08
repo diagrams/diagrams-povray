@@ -23,18 +23,16 @@ import Diagrams.ThreeD.Shapes
 data POVRay = POVRay
   deriving (Eq,Ord,Read,Show,Typeable)
 
+instance Monoid (Render POVRay R3) where
+  mempty  = P $ return ()
+  (P r1) `mappend` (P r2) = P (r1 >> r2)
 
-instance Monoid (Render Cairo R2) where
-  mempty  = C $ return ()
-  (C r1) `mappend` (C r2) = C (r1 >> r2)
+type PMonad a = Identity a
 
-instance Backend Cairo R2 where
-  data Render  Cairo R2 = C (C.Render ())
-  type Result  Cairo R2 = (IO (), C.Render ())
-  data Options Cairo R2 = CairoOptions
-          { fileName     :: String       -- ^ the name of the file you want generated
-          , outputFormat :: OutputFormat -- ^ the output format and associated options
-          }
+instance Backend POVRay R3 where
+  data Render  POVRay R3 = P (PMonad ())
+  type Result  POVRay R3 = String
+  data Options POVRay R2 = POVRayOptions
 
   withStyle _ s t (C r) = C $ do
     C.save
