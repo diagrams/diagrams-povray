@@ -1,0 +1,22 @@
+Name:                diagrams-povray
+Version:             0.1
+Synopsis:            Persistence Of Vision raytracer backend for diagrams EDSL
+Description:         XXX write me
+Homepage:            http://projects.haskell.org/diagrams
+License:             BSD3
+License-file:        LICENSE
+Author:              Brent Yorgey
+Maintainer:          diagrams-discuss@googlegroups.com
+Category:            Graphics
+Build-type:          Simple
+Cabal-version:       >=1.2
+Tested-with:         GHC ==7.0.3
+Source-repository head
+  type:     darcs
+  location: http://patch-tag.com/r/byorgey/diagrams-povray
+
+Library
+  Exposed-modules:   Diagrams.Backend.POVRay
+  Hs-source-dirs:    src
+  Build-depends:     base >= 4.2 && < 4.4,
+                     diagrams-lib >= 0.2 && < 0.3
