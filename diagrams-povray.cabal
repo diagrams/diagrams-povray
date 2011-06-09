@@ -19,4 +19,6 @@ Library
   Exposed-modules:   Diagrams.Backend.POVRay
   Hs-source-dirs:    src
   Build-depends:     base >= 4.2 && < 4.4,
-                     diagrams-lib >= 0.2 && < 0.3
+                     diagrams-core >= 0.3 && < 0.4,
+                     diagrams-lib >= 0.3 && < 0.4,
+                     pretty >= 1.0.1.2 && < 1.1
