@@ -1,4 +1,6 @@
-{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE TypeSynonymInstances
+           , TypeFamilies
+  #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Diagrams.Backend.POVRay.Syntax
@@ -14,6 +16,9 @@
 module Diagrams.Backend.POVRay.Syntax where
 
 import Text.PrettyPrint.HughesPJ
+
+import Data.AdditiveGroup
+import Data.VectorSpace
 
 ------------------------------------------------------------
 -- Pretty-printing
@@ -54,6 +59,15 @@ data Vector = VecLit Double Double Double
 
 instance SDL Vector where
   toSDL (VecLit x y z) = text "<" <> hsep (punctuate comma (map toSDL [x,y,z])) <> text ">"
+
+instance AdditiveGroup Vector where
+  zeroV = VecLit 0 0 0
+  (VecLit x1 y1 z1) ^+^ (VecLit x2 y2 z2) = VecLit (x1+x2) (y1+y2) (z1+z1)
+  negateV (VecLit x y z) = VecLit (-x) (-y) (-z)
+
+instance VectorSpace Vector where
+  type Scalar Vector = Double
+  d *^ (VecLit x y z) = VecLit (d*x) (d*y) (d*z)
 
 data Color = RGB Vector
 
@@ -114,9 +128,19 @@ instance SDL Object where
   toSDL (OLight l)        = toSDL l
 
 data ObjectModifier = OMPigment Pigment
+                    | OMTransf TMatrix
 
 instance SDL ObjectModifier where
   toSDL (OMPigment p) = toSDL p
+  toSDL (OMTransf m)  = toSDL m
+
+-- should be a list of 12 doubles
+data TMatrix = TMatrix [Double]
+
+instance SDL TMatrix where
+  toSDL (TMatrix ds) = text "matrix <"
+                       <> (hcat . punctuate comma . map toSDL $ ds)
+                       <> text ">"
 
 data Pigment = PColor Color
 
