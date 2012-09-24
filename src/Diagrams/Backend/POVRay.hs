@@ -3,6 +3,7 @@
            , MultiParamTypeClasses
            , TypeFamilies
            , DeriveDataTypeable
+           , ViewPatterns
   #-}
 
 -----------------------------------------------------------------------------
@@ -58,7 +59,7 @@ povrayTransf t = OMTransf $
                          , v10, v11, v12
                          , v20, v21, v22
                          , v30, v31, v32 ]
-  where (v00, v01, v02) = apply t (1,0,0)
-        (v10, v11, v12) = apply t (0,1,0)
-        (v20, v21, v22) = apply t (0,0,1)
-        (v30, v31, v32) = transl t
+  where (unr3 -> (v00, v01, v02)) = apply t (r3 (1,0,0))
+        (unr3 -> (v10, v11, v12)) = apply t (r3 (0,1,0))
+        (unr3 -> (v20, v21, v22)) = apply t (r3 (0,0,1))
+        (unr3 -> (v30, v31, v32)) = transl t

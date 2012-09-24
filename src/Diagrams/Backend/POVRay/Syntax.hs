@@ -1,6 +1,6 @@
-{-# LANGUAGE TypeSynonymInstances
-           , TypeFamilies
-  #-}
+{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE FlexibleInstances #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Diagrams.Backend.POVRay.Syntax
