@@ -8,4 +8,5 @@ before_install:
 install:
   - cd diagrams
   - cabal install monoid-extras/ dual-tree/ core/ lib/
+  - cabal install --enable-tests povray/
   - cd ..
