@@ -21,7 +21,7 @@ module Diagrams.Backend.POVRay
   ( POVRay(..)       -- backend token
   ) where
 
-import Graphics.Rendering.Diagrams.Transform
+import Diagrams.Core.Transform
 
 import Diagrams.Prelude
 import Diagrams.ThreeD.Types
