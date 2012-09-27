@@ -7,13 +7,14 @@ License:             BSD3
 License-file:        LICENSE
 Author:              Brent Yorgey
 Maintainer:          diagrams-discuss@googlegroups.com
+Bug-reports:         http://github.com/diagrams/diagrams-povray/issues
 Category:            Graphics
 Build-type:          Simple
-Cabal-version:       >=1.2
+Cabal-version:       >=1.10
 Tested-with:         GHC ==7.0.3
 Source-repository head
-  type:     darcs
-  location: http://patch-tag.com/r/byorgey/diagrams-povray
+  type:     git
+  location: http://github.com/diagrams/diagrams-povray.git
 
 Library
   Exposed-modules:   Diagrams.Backend.POVRay
@@ -23,3 +24,4 @@ Library
                      diagrams-lib >= 0.5 && < 0.6,
                      pretty >= 1.0.1.2 && < 1.2,
                      vector-space >= 0.8 && < 0.9
+  Default-language:  Haskell2010
