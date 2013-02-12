@@ -6,7 +6,7 @@ before_install:
 install:
   - cabal update
   - cd diagrams
-  - cabal install monoid-extras/ dual-tree/ core/ lib/
+  - cabal install core/ lib/
   - cd ..
   - cabal install --enable-tests
 
