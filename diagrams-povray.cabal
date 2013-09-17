@@ -18,6 +18,7 @@ Source-repository head
 
 Library
   Exposed-modules:   Diagrams.Backend.POVRay
+  Other-Modules:     Diagrams.Backend.POVRay.Syntax
   Hs-source-dirs:    src
   Build-depends:     base >= 4.2 && < 4.7,
                      diagrams-core >= 0.7 && < 0.8,
