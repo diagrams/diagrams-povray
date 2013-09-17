@@ -66,7 +66,7 @@ instance SDL Vector where
 
 instance AdditiveGroup Vector where
   zeroV = VecLit 0 0 0
-  (VecLit x1 y1 z1) ^+^ (VecLit x2 y2 z2) = VecLit (x1+x2) (y1+y2) (z1+z1)
+  (VecLit x1 y1 z1) ^+^ (VecLit x2 y2 z2) = VecLit (x1+x2) (y1+y2) (z1+z2)
   negateV (VecLit x y z) = VecLit (-x) (-y) (-z)
 
 instance VectorSpace Vector where
