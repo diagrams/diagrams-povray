@@ -83,11 +83,12 @@ instance SDL VColor where
 ------------------------------------------------------------
 
 -- | Top-level items that can occur in a scene.
-data SceneItem = SICamera [CameraItem]
+data SceneItem = SICamera CameraType [CameraItem]
                | SIObject Object
 
 instance SDL SceneItem where
-  toSDL (SICamera cItems) = block "camera" (map toSDL cItems)
+  toSDL (SICamera cType cItems) = block "camera"
+                                  (toSDL cType:map toSDL cItems)
   toSDL (SIObject obj)    = toSDL obj
 
 ------------------------------------------------------------
@@ -101,12 +102,18 @@ instance SDL CameraItem where
   toSDL (CIVector cv)   = toSDL cv
   toSDL (CIModifier cm) = toSDL cm
 
+data CameraType = Perspective | Orthographic  -- TODO add more types?
+
 
 data CameraVector = CVLocation  Vector
                   | CVRight     Vector
                   | CVUp        Vector
                   | CVDirection Vector
                   | CVSky       Vector
+
+instance SDL CameraType where
+    toSDL Perspective = empty
+    toSDL Orthographic = text "orthographic"
 
 instance SDL CameraVector where
   toSDL (CVLocation v)  = text "location"  <+> toSDL v
@@ -116,9 +123,11 @@ instance SDL CameraVector where
   toSDL (CVSky v)       = text "sky"       <+> toSDL v
 
 data CameraModifier = CMLookAt Vector
+                    | CMAngle Double -- degrees
 
 instance SDL CameraModifier where
   toSDL (CMLookAt v) = text "look_at" <+> toSDL v
+  toSDL (CMAngle  d) = text "angle" <+> toSDL d
 
 ------------------------------------------------------------
 -- Objects
