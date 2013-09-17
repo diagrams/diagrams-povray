@@ -19,6 +19,7 @@
 module Diagrams.Backend.POVRay
 
   ( POVRay(..)       -- backend token
+  ,  Options(..)  -- rendering options
   ) where
 
 import Diagrams.Core.Transform
