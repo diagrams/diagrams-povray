@@ -95,6 +95,14 @@ instance Renderable (Camera OrthoLens) POVRay where
       upUnit =  fromDirection . asSpherical . camUp $ c
       rightUnit = fromDirection . asSpherical . camRight $ c
 
+instance Renderable ParallelLight POVRay where
+    render _ (ParallelLight v c) = Pov [SIObject . OLight $ LightSource pos c' [
+        Parallel v' ]] where
+      pos = vector . unp3 $ origin .-^ (1000 *^ v)
+      v' =  vector . unp3 $ origin
+      (S.RGB r g b) = S.toRGB c
+      c' = RGB . vector $ (r, g, b)
+
 povrayTransf :: T3 -> ObjectModifier
 povrayTransf t = OMTransf $
                  TMatrix [ v00, v01, v02
