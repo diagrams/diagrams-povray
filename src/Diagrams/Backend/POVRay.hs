@@ -100,8 +100,13 @@ instance Renderable ParallelLight POVRay where
         Parallel v' ]] where
       pos = vector . unp3 $ origin .-^ (1000 *^ v)
       v' =  vector . unp3 $ origin
-      (S.RGB r g b) = S.toRGB c
-      c' = RGB . vector $ (r, g, b)
+      c' = convertColor c
+
+instance Renderable PointLight POVRay where
+    render _ (PointLight p c) =
+        Pov [SIObject . OLight $ LightSource pos c' []] where
+          pos = vector $ unp3 p
+          c' = convertColor c
 
 povrayTransf :: T3 -> ObjectModifier
 povrayTransf t = OMTransf $
