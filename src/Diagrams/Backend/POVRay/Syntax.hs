@@ -49,6 +49,10 @@ instance SDL Double where
 instance SDL () where
   toSDL _ = empty
 
+instance SDL s => SDL (Maybe s) where
+  toSDL Nothing  = empty
+  toSDL (Just s) = toSDL s
+
 ------------------------------------------------------------
 -- Basics
 ------------------------------------------------------------
