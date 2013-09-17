@@ -73,9 +73,9 @@ instance VectorSpace Vector where
   type Scalar Vector = Double
   d *^ (VecLit x y z) = VecLit (d*x) (d*y) (d*z)
 
-data Color = RGB Vector
+data VColor = RGB Vector
 
-instance SDL Color where
+instance SDL VColor where
   toSDL (RGB v) = text "rgb" <+> toSDL v
 
 ------------------------------------------------------------
@@ -146,7 +146,7 @@ instance SDL TMatrix where
                        <> (hcat . punctuate comma . map toSDL $ ds)
                        <> text ">"
 
-data Pigment = PColor Color
+data Pigment = PColor VColor
 
 instance SDL Pigment where
   toSDL (PColor c) = block "pigment" [toSDL c]
@@ -165,7 +165,7 @@ instance SDL FiniteSolid where
 -- Light sources
 ------------------------------------------------------------
 
-data LightSource = LightSource Vector Color [LightModifier]
+data LightSource = LightSource Vector VColor [LightModifier]
 
 instance SDL LightSource where
   toSDL (LightSource loc c mods) = block "light_source" (lc : map toSDL mods)
