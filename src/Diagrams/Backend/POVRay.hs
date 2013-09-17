@@ -26,9 +26,12 @@ import qualified Data.Colour.SRGB.Linear as S
 
 import Diagrams.Core.Transform
 
-import Diagrams.Prelude
+import Diagrams.Prelude hiding (fromDirection, tan)
 import Diagrams.ThreeD.Types
 import Diagrams.ThreeD.Shapes
+import Diagrams.ThreeD.Vector
+import Diagrams.ThreeD.Camera
+import Diagrams.ThreeD.Light
 
 import Diagrams.Backend.POVRay.Syntax
 
@@ -55,6 +58,42 @@ instance Backend POVRay R3 where
 instance Renderable Ellipsoid POVRay where
   render _ (Ellipsoid t) = Pov [SIObject . OFiniteSolid $ s]
     where s = Sphere zeroV 1 [povrayTransf t]
+
+-- For perspective projection, forLen tells POVRay the horizontal
+-- field of view, and CVRight specifies the aspect ratio of the view.
+-- For orthographic projection, rightLen & upLen are the actual window
+-- dimensions, and forLen is ignored by POVRay.
+instance Renderable (Camera PerspectiveLens) POVRay where
+  render _ c = Pov [ SICamera cType [
+    CIVector . CVLocation . vector $ loc
+    , CIVector . CVDirection . vector . unr3 $ forLen *^ forUnit
+    , CIVector . CVUp . vector . unr3 $ upUnit
+    , CIVector . CVRight . vector . unr3 $ rightLen *^ rightUnit
+    ]]
+    where
+      loc = unp3 . camLoc $ c
+      (PerspectiveLens h v) = camLens c
+      forUnit = fromDirection . asSpherical . camForward $ c
+      forLen = 0.5*rightLen/tan(h'/2) where
+        (Rad h') = convertAngle h
+      upUnit =  fromDirection . asSpherical . camUp $ c
+      rightUnit = fromDirection . asSpherical . camRight $ c
+      rightLen = angleRatio h v
+      cType = Perspective
+
+instance Renderable (Camera OrthoLens) POVRay where
+  render _ c = Pov [ SICamera Orthographic [
+    CIVector . CVLocation . vector $ loc
+    , CIVector . CVDirection . vector . unr3 $ forUnit
+    , CIVector . CVUp . vector . unr3 $ v *^ upUnit
+    , CIVector . CVRight . vector . unr3 $ h *^ rightUnit
+    ]]
+    where
+      loc = unp3 . camLoc $ c
+      (OrthoLens h v) = camLens c
+      forUnit = fromDirection . asSpherical . camForward $ c
+      upUnit =  fromDirection . asSpherical . camUp $ c
+      rightUnit = fromDirection . asSpherical . camRight $ c
 
 povrayTransf :: T3 -> ObjectModifier
 povrayTransf t = OMTransf $
