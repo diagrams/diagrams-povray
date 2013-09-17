@@ -180,4 +180,7 @@ instance SDL LightSource where
   toSDL (LightSource loc c mods) = block "light_source" (lc : map toSDL mods)
     where lc = toSDL loc <> comma <+> toSDL c
 
-type LightModifier = ()
+data LightModifier = Parallel Vector
+
+instance SDL LightModifier where
+    toSDL (Parallel v) = text "parallel" $$ text "point_at" <+> toSDL v
