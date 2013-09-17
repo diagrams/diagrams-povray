@@ -22,6 +22,8 @@ module Diagrams.Backend.POVRay
   ,  Options(..)  -- rendering options
   ) where
 
+import qualified Data.Colour.SRGB.Linear as S
+
 import Diagrams.Core.Transform
 
 import Diagrams.Prelude
@@ -46,7 +48,7 @@ instance Backend POVRay R3 where
   type Result  POVRay R3 = String
   data Options POVRay R3 = POVRayOptions
 
-  withStyle _ _ _ p = p
+  withStyle _ s _ (Pov is) = Pov $ map (setSurfColor s) is
 
   doRender _ _ (Pov items) = PP.render . PP.vcat . map toSDL $ items
 
@@ -67,3 +69,18 @@ povrayTransf t = OMTransf $
 
 vector :: (Double, Double, Double) -> Vector
 vector (x, y, z) = VecLit x y z
+
+convertColor :: Color c => c -> VColor
+convertColor c = RGB $ vector (r, g, b) where
+  (r, g, b, _) = colorToSRGBA c
+
+-- Use the FillColor attribute for the diffuse pigment of the object.  Diagrams
+-- doesn't have a model for highlights, transparency, etc. yet.
+setSurfColor :: Style v -> SceneItem -> SceneItem
+setSurfColor _ i@(SICamera _ _) = i
+setSurfColor _ i@(SIObject (OLight _)) = i
+setSurfColor s i@(SIObject (OFiniteSolid (Sphere c r mods))) =
+    case getFillColor <$> getAttr s of
+        Nothing -> i
+        Just (SomeColor col) -> SIObject . OFiniteSolid $ Sphere c r (p:mods) where
+          p = OMPigment . PColor . convertColor $ col

@@ -24,5 +24,6 @@ Library
                      diagrams-core >= 0.7 && < 0.8,
                      diagrams-lib >= 0.7 && < 0.8,
                      pretty >= 1.0.1.2 && < 1.2,
-                     vector-space >= 0.8 && < 0.9
+                     vector-space >= 0.8 && < 0.9,
+                     colour >= 2.3 && < 2.4
   Default-language:  Haskell2010
