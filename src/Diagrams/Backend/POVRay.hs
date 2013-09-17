@@ -64,3 +64,6 @@ povrayTransf t = OMTransf $
         (unr3 -> (v10, v11, v12)) = apply t (r3 (0,1,0))
         (unr3 -> (v20, v21, v22)) = apply t (r3 (0,0,1))
         (unr3 -> (v30, v31, v32)) = transl t
+
+vector :: (Double, Double, Double) -> Vector
+vector (x, y, z) = VecLit x y z
