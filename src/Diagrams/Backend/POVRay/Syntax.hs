@@ -49,6 +49,10 @@ instance SDL Double where
 instance SDL () where
   toSDL _ = empty
 
+instance SDL s => SDL (Maybe s) where
+  toSDL Nothing  = empty
+  toSDL (Just s) = toSDL s
+
 ------------------------------------------------------------
 -- Basics
 ------------------------------------------------------------
@@ -62,16 +66,16 @@ instance SDL Vector where
 
 instance AdditiveGroup Vector where
   zeroV = VecLit 0 0 0
-  (VecLit x1 y1 z1) ^+^ (VecLit x2 y2 z2) = VecLit (x1+x2) (y1+y2) (z1+z1)
+  (VecLit x1 y1 z1) ^+^ (VecLit x2 y2 z2) = VecLit (x1+x2) (y1+y2) (z1+z2)
   negateV (VecLit x y z) = VecLit (-x) (-y) (-z)
 
 instance VectorSpace Vector where
   type Scalar Vector = Double
   d *^ (VecLit x y z) = VecLit (d*x) (d*y) (d*z)
 
-data Color = RGB Vector
+data VColor = RGB Vector
 
-instance SDL Color where
+instance SDL VColor where
   toSDL (RGB v) = text "rgb" <+> toSDL v
 
 ------------------------------------------------------------
@@ -79,11 +83,12 @@ instance SDL Color where
 ------------------------------------------------------------
 
 -- | Top-level items that can occur in a scene.
-data SceneItem = SICamera [CameraItem]
+data SceneItem = SICamera CameraType [CameraItem]
                | SIObject Object
 
 instance SDL SceneItem where
-  toSDL (SICamera cItems) = block "camera" (map toSDL cItems)
+  toSDL (SICamera cType cItems) = block "camera"
+                                  (toSDL cType:map toSDL cItems)
   toSDL (SIObject obj)    = toSDL obj
 
 ------------------------------------------------------------
@@ -97,12 +102,18 @@ instance SDL CameraItem where
   toSDL (CIVector cv)   = toSDL cv
   toSDL (CIModifier cm) = toSDL cm
 
+data CameraType = Perspective | Orthographic  -- TODO add more types?
+
 
 data CameraVector = CVLocation  Vector
                   | CVRight     Vector
                   | CVUp        Vector
                   | CVDirection Vector
                   | CVSky       Vector
+
+instance SDL CameraType where
+    toSDL Perspective = empty
+    toSDL Orthographic = text "orthographic"
 
 instance SDL CameraVector where
   toSDL (CVLocation v)  = text "location"  <+> toSDL v
@@ -112,9 +123,11 @@ instance SDL CameraVector where
   toSDL (CVSky v)       = text "sky"       <+> toSDL v
 
 data CameraModifier = CMLookAt Vector
+                    | CMAngle Double -- degrees
 
 instance SDL CameraModifier where
   toSDL (CMLookAt v) = text "look_at" <+> toSDL v
+  toSDL (CMAngle  d) = text "angle" <+> toSDL d
 
 ------------------------------------------------------------
 -- Objects
@@ -142,7 +155,7 @@ instance SDL TMatrix where
                        <> (hcat . punctuate comma . map toSDL $ ds)
                        <> text ">"
 
-data Pigment = PColor Color
+data Pigment = PColor VColor
 
 instance SDL Pigment where
   toSDL (PColor c) = block "pigment" [toSDL c]
@@ -161,10 +174,13 @@ instance SDL FiniteSolid where
 -- Light sources
 ------------------------------------------------------------
 
-data LightSource = LightSource Vector Color [LightModifier]
+data LightSource = LightSource Vector VColor [LightModifier]
 
 instance SDL LightSource where
   toSDL (LightSource loc c mods) = block "light_source" (lc : map toSDL mods)
     where lc = toSDL loc <> comma <+> toSDL c
 
-type LightModifier = ()
+data LightModifier = Parallel Vector
+
+instance SDL LightModifier where
+    toSDL (Parallel v) = text "parallel" $$ text "point_at" <+> toSDL v
