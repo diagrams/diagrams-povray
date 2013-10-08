@@ -180,10 +180,18 @@ instance SDL TFinish where
 ------------------------------------------------------------
 
 data FiniteSolid = Sphere Vector Double [ObjectModifier]
+                 | Box Vector Vector [ObjectModifier]
+                 | Cone Vector Double Vector Double Bool [ObjectModifier]
 
 instance SDL FiniteSolid where
   toSDL (Sphere c r mods) = block "sphere" (cr : map toSDL mods)
     where cr = toSDL c <> comma <+> toSDL r
+  toSDL (Box p1 p2 mods) = block "box" (corners : map toSDL mods)
+    where corners = toSDL p1 <> comma <+> toSDL p2
+  toSDL (Cone p1 r1 p2 r2 o mods) = block "cone" (geom : open : map toSDL mods) where
+    open = if o then text " open" else empty
+    geom = toSDL p1 <> comma <+> toSDL r1 <> comma <+>
+           toSDL p2 <> comma <+> toSDL r2
 
 ------------------------------------------------------------
 -- Light sources
@@ -206,9 +214,13 @@ makePrisms ''ObjectModifier
 
 getMods :: FiniteSolid -> [ObjectModifier]
 getMods (Sphere _ _ ms) = ms
+getMods (Box _ _ ms) = ms
+getMods (Cone _ _ _ _ _ ms) = ms
 
 setMods :: FiniteSolid -> [ObjectModifier] -> FiniteSolid
-setMods (Sphere v r _) new = Sphere v r new 
+setMods (Sphere v r _) new = Sphere v r new
+setMods (Box p1 p2 _) new = Box p1 p2 new
+setMods (Cone p1 r1 p2 r2 o _) new = Cone p1 r1 p2 r2 o new
 
 mods :: Lens' FiniteSolid [ObjectModifier]
 mods = lens getMods setMods

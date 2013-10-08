@@ -27,10 +27,9 @@ import Data.Maybe
 
 import Diagrams.Core.Transform
 
-import Diagrams.Prelude hiding (fromDirection, view)
-import Diagrams.ThreeD
+import Diagrams.Prelude.ThreeD as D
 
-import Diagrams.Backend.POVRay.Syntax
+import Diagrams.Backend.POVRay.Syntax as P
 
 import Data.Typeable
 
@@ -55,6 +54,14 @@ instance Backend POVRay R3 where
 instance Renderable Ellipsoid POVRay where
   render _ (Ellipsoid t) = Pov [SIObject . OFiniteSolid $ s]
     where s = Sphere zeroV 1 [povrayTransf t]
+
+instance Renderable D.Box POVRay where
+    render _ (D.Box t) = Pov [SIObject . OFiniteSolid $ box]
+      where box = P.Box zeroV (VecLit 1 1 1) [povrayTransf t]
+
+instance Renderable Frustum POVRay where
+    render _ (Frustum r0 r1 t) = Pov [SIObject . OFiniteSolid $ f]
+      where f = Cone zeroV r0 (VecLit 0 0 1) r1 False [povrayTransf t]
 
 -- For perspective projection, forLen tells POVRay the horizontal
 -- field of view, and CVRight specifies the aspect ratio of the view.
