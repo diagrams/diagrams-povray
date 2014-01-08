@@ -22,6 +22,7 @@ module Diagrams.Backend.POVRay
   ,  Options(..)  -- rendering options
   ) where
 
+import Control.Lens ((^.))
 import qualified Data.Colour.SRGB.Linear as S
 
 import Diagrams.Core.Transform
@@ -74,8 +75,7 @@ instance Renderable (Camera PerspectiveLens) POVRay where
       loc = unp3 . camLoc $ c
       (PerspectiveLens h v) = camLens c
       forUnit = fromDirection . asSpherical . camForward $ c
-      forLen = 0.5*rightLen/tan(h'/2) where
-        (Rad h') = convertAngle h
+      forLen = 0.5*rightLen/tan(h^.rad/2)
       upUnit =  fromDirection . asSpherical . camUp $ c
       rightUnit = fromDirection . asSpherical . camRight $ c
       rightLen = angleRatio h v

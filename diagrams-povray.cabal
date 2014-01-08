@@ -25,5 +25,6 @@ Library
                      diagrams-lib >= 1.0 && < 1.1,
                      pretty >= 1.0.1.2 && < 1.2,
                      vector-space >= 0.8 && < 0.9,
-                     colour >= 2.3 && < 2.4
+                     colour >= 2.3 && < 2.4,
+                     lens >= 3.9 && < 3.11
   Default-language:  Haskell2010
