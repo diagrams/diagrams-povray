@@ -1,16 +1,31 @@
 language: haskell
-before_install:
-  - git clone --quiet git://github.com/diagrams/diagrams-core.git diagrams/core
-  - git clone --quiet git://github.com/diagrams/diagrams-lib.git diagrams/lib
 
-install:
-  - cabal update
-  - cd diagrams
-  - cabal install core/ lib/
-  - cd ..
-  - cabal install --enable-tests
+env:
+  matrix:
+    - HPVER=2012.4.0.0
+    - HPVER=2013.2.0.0
+    - GHCVER=7.4.2
+    - GHCVER=7.6.3
+    - GHCVER=head
+  global:
+    - CABALVER=1.18
+    - HEAD_DEPS="diagrams-core diagrams-lib"
+
+matrix:
+  allow_failures:
+    - env: GHCVER=head
+
+before_install:
+  - git clone http://github.com/diagrams/diagrams-travis travis
+  - source travis/scripts/set_env.sh
+  - ./travis/scripts/before_install.sh
+
+install: ./travis/scripts/install.sh
+
+script: ./travis/scripts/script.sh
 
 notifications:
+  email: false
   irc:
     channels:
       - irc.freenode.org#diagrams
