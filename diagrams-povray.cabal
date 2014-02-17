@@ -20,11 +20,11 @@ Library
   Exposed-modules:   Diagrams.Backend.POVRay
   Other-Modules:     Diagrams.Backend.POVRay.Syntax
   Hs-source-dirs:    src
-  Build-depends:     base >= 4.2 && < 4.7,
-                     diagrams-core >= 1.0 && < 1.1,
-                     diagrams-lib >= 1.0 && < 1.1,
+  Build-depends:     base >= 4.2 && < 4.8,
+                     diagrams-core >= 1.0 && < 1.2,
+                     diagrams-lib >= 1.0 && < 1.2,
                      pretty >= 1.0.1.2 && < 1.2,
                      vector-space >= 0.8 && < 0.9,
                      colour >= 2.3 && < 2.4,
-                     lens >= 3.9 && < 3.11
+                     lens >= 3.9 && < 4.1
   Default-language:  Haskell2010
