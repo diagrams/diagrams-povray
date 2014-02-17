@@ -22,16 +22,13 @@ module Diagrams.Backend.POVRay
   ,  Options(..)  -- rendering options
   ) where
 
-import Control.Lens ((^.))
+import Control.Lens ((^.), (<>~), view)
+import Data.Maybe
 
 import Diagrams.Core.Transform
 
-import Diagrams.Prelude hiding (fromDirection)
-import Diagrams.ThreeD.Types
-import Diagrams.ThreeD.Shapes
-import Diagrams.ThreeD.Vector
-import Diagrams.ThreeD.Camera
-import Diagrams.ThreeD.Light
+import Diagrams.Prelude hiding (fromDirection, view)
+import Diagrams.ThreeD
 
 import Diagrams.Backend.POVRay.Syntax
 
@@ -51,7 +48,7 @@ instance Backend POVRay R3 where
   type Result  POVRay R3 = String
   data Options POVRay R3 = POVRayOptions
 
-  withStyle _ s _ (Pov is) = Pov $ map (setSurfColor s) is
+  withStyle _ s _ (Pov is) = Pov $ map (setTexture s) is
 
   doRender _ _ (Pov items) = PP.render . PP.vcat . map toSDL $ items
 
@@ -125,10 +122,17 @@ convertColor :: Color c => c -> VColor
 convertColor c = RGB $ vector (r, g, b) where
   (r, g, b, _) = colorToSRGBA c
 
--- Use the FillColor attribute for the diffuse pigment of the object.  Diagrams
--- doesn't have a model for highlights, transparency, etc. yet.
-setSurfColor :: Style v -> SceneItem -> SceneItem
-setSurfColor sty = _SIObject . _OFiniteSolid . mods %~ \old ->
-    case getFillColor <$> getAttr sty of
-        Nothing -> old
-        Just (SomeColor col) -> (OMTexture [Pigment . convertColor $ col] :old)
+setTexture :: Style R3 -> SceneItem -> SceneItem
+setTexture sty = _SIObject . _OFiniteSolid . mods <>~
+                 [OMTexture (mkFinish sty:mkPigment sty)]
+
+mkPigment :: Style R3 -> [Texture]
+mkPigment sty = Pigment . convertColor . view surfaceColor <$> catMaybes [getAttr sty]
+
+mkFinish :: Style R3 -> Texture
+mkFinish sty = Finish . catMaybes $ [
+                     TAmbient . view _Ambient <$> getAttr sty,
+                     TDiffuse . view _Diffuse <$> getAttr sty,
+                     TSpecular . view (_Highlight . specularIntensity) <$> getAttr sty,
+                     TRoughness . view (_Highlight . specularSize) <$> getAttr sty
+                     ]
