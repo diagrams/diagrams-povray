@@ -1,6 +1,9 @@
-{-# LANGUAGE TypeSynonymInstances #-}
-{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE RankNTypes                 #-}
+{-# LANGUAGE TemplateHaskell            #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeSynonymInstances #-}
+
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Diagrams.Backend.POVRay.Syntax
@@ -17,6 +20,7 @@ module Diagrams.Backend.POVRay.Syntax where
 
 import Text.PrettyPrint.HughesPJ
 
+import Control.Lens
 import Data.AdditiveGroup
 import Data.VectorSpace
 
@@ -195,3 +199,16 @@ data LightModifier = Parallel Vector
 
 instance SDL LightModifier where
     toSDL (Parallel v) = text "parallel" $$ text "point_at" <+> toSDL v
+
+makePrisms ''SceneItem
+makePrisms ''Object
+makePrisms ''ObjectModifier
+
+getMods :: FiniteSolid -> [ObjectModifier]
+getMods (Sphere _ _ ms) = ms
+
+setMods :: FiniteSolid -> [ObjectModifier] -> FiniteSolid
+setMods (Sphere v r _) new = Sphere v r new 
+
+mods :: Lens' FiniteSolid [ObjectModifier]
+mods = lens getMods setMods

@@ -128,10 +128,7 @@ convertColor c = RGB $ vector (r, g, b) where
 -- Use the FillColor attribute for the diffuse pigment of the object.  Diagrams
 -- doesn't have a model for highlights, transparency, etc. yet.
 setSurfColor :: Style v -> SceneItem -> SceneItem
-setSurfColor _ i@(SICamera _ _) = i
-setSurfColor _ i@(SIObject (OLight _)) = i
-setSurfColor s i@(SIObject (OFiniteSolid (Sphere c r mods))) =
-    case getFillColor <$> getAttr s of
-        Nothing -> i
-        Just (SomeColor col) -> SIObject . OFiniteSolid $ Sphere c r (p:mods) where
-          p = OMTexture [Pigment . convertColor $ col]
+setSurfColor sty = _SIObject . _OFiniteSolid . mods %~ \old ->
+    case getFillColor <$> getAttr sty of
+        Nothing -> old
+        Just (SomeColor col) -> (OMTexture [Pigment . convertColor $ col] :old)
