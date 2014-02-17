@@ -134,4 +134,4 @@ setSurfColor s i@(SIObject (OFiniteSolid (Sphere c r mods))) =
     case getFillColor <$> getAttr s of
         Nothing -> i
         Just (SomeColor col) -> SIObject . OFiniteSolid $ Sphere c r (p:mods) where
-          p = OMPigment . PColor . convertColor $ col
+          p = OMTexture [Pigment . convertColor $ col]

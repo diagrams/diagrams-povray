@@ -140,11 +140,11 @@ instance SDL Object where
   toSDL (OFiniteSolid fs) = toSDL fs
   toSDL (OLight l)        = toSDL l
 
-data ObjectModifier = OMPigment Pigment
+data ObjectModifier = OMTexture [Texture]
                     | OMTransf TMatrix
 
 instance SDL ObjectModifier where
-  toSDL (OMPigment p) = toSDL p
+  toSDL (OMTexture p) = block "texture" $ map toSDL p
   toSDL (OMTransf m)  = toSDL m
 
 -- should be a list of 12 doubles
@@ -155,10 +155,21 @@ instance SDL TMatrix where
                        <> (hcat . punctuate comma . map toSDL $ ds)
                        <> text ">"
 
-data Pigment = PColor VColor
+-- May support more pigment & texture options in the future.
+data Texture = Pigment VColor | Finish [TFinish]
 
-instance SDL Pigment where
-  toSDL (PColor c) = block "pigment" [toSDL c]
+data TFinish = TAmbient Double | TDiffuse Double
+             | TSpecular Double | TRoughness Double
+
+instance SDL Texture where
+    toSDL (Pigment c) = block "pigment" [toSDL c]
+    toSDL (Finish  f) = block "finish" $ map toSDL f
+
+instance SDL TFinish where
+    toSDL (TAmbient a) = text "ambient" <+> toSDL a
+    toSDL (TDiffuse d) = text "diffuse" <+> toSDL d
+    toSDL (TSpecular s) = text "specular" <+> toSDL s
+    toSDL (TRoughness r) = text "roughness" <+> toSDL r
 
 ------------------------------------------------------------
 -- Finite solids
