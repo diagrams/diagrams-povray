@@ -70,10 +70,10 @@ instance Renderable (Camera PerspectiveLens) POVRay where
     where
       l = unp3 . camLoc $ c
       (PerspectiveLens h v) = camLens c
-      forUnit = fromDirection . asSpherical . camForward $ c
+      forUnit = fromDirection . camForward $ c
       forLen = 0.5*rightLen/tan(h^.rad/2)
-      upUnit =  fromDirection . asSpherical . camUp $ c
-      rightUnit = fromDirection . asSpherical . camRight $ c
+      upUnit =  fromDirection . camUp $ c
+      rightUnit = fromDirection . camRight $ c
       rightLen = angleRatio h v
       cType = Perspective
 
@@ -87,9 +87,9 @@ instance Renderable (Camera OrthoLens) POVRay where
     where
       l = unp3 . camLoc $ c
       (OrthoLens h v) = camLens c
-      forUnit = fromDirection . asSpherical . camForward $ c
-      upUnit =  fromDirection . asSpherical . camUp $ c
-      rightUnit = fromDirection . asSpherical . camRight $ c
+      forUnit = fromDirection . camForward $ c
+      upUnit =  fromDirection . camUp $ c
+      rightUnit = fromDirection . camRight $ c
 
 instance Renderable ParallelLight POVRay where
     render _ (ParallelLight v c) = Pov [SIObject . OLight $ LightSource pos c' [
