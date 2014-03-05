@@ -23,11 +23,10 @@ module Diagrams.Backend.POVRay
   ) where
 
 import Control.Lens ((^.))
-import qualified Data.Colour.SRGB.Linear as S
 
 import Diagrams.Core.Transform
 
-import Diagrams.Prelude hiding (fromDirection, tan)
+import Diagrams.Prelude hiding (fromDirection)
 import Diagrams.ThreeD.Types
 import Diagrams.ThreeD.Shapes
 import Diagrams.ThreeD.Vector
@@ -66,13 +65,13 @@ instance Renderable Ellipsoid POVRay where
 -- dimensions, and forLen is ignored by POVRay.
 instance Renderable (Camera PerspectiveLens) POVRay where
   render _ c = Pov [ SICamera cType [
-    CIVector . CVLocation . vector $ loc
+    CIVector . CVLocation . vector $ l
     , CIVector . CVDirection . vector . unr3 $ forLen *^ forUnit
     , CIVector . CVUp . vector . unr3 $ upUnit
     , CIVector . CVRight . vector . unr3 $ rightLen *^ rightUnit
     ]]
     where
-      loc = unp3 . camLoc $ c
+      l = unp3 . camLoc $ c
       (PerspectiveLens h v) = camLens c
       forUnit = fromDirection . asSpherical . camForward $ c
       forLen = 0.5*rightLen/tan(h^.rad/2)
@@ -83,13 +82,13 @@ instance Renderable (Camera PerspectiveLens) POVRay where
 
 instance Renderable (Camera OrthoLens) POVRay where
   render _ c = Pov [ SICamera Orthographic [
-    CIVector . CVLocation . vector $ loc
+    CIVector . CVLocation . vector $ l
     , CIVector . CVDirection . vector . unr3 $ forUnit
     , CIVector . CVUp . vector . unr3 $ v *^ upUnit
     , CIVector . CVRight . vector . unr3 $ h *^ rightUnit
     ]]
     where
-      loc = unp3 . camLoc $ c
+      l = unp3 . camLoc $ c
       (OrthoLens h v) = camLens c
       forUnit = fromDirection . asSpherical . camForward $ c
       upUnit =  fromDirection . asSpherical . camUp $ c
