@@ -22,18 +22,14 @@ module Diagrams.Backend.POVRay
   ,  Options(..)  -- rendering options
   ) where
 
-import Control.Lens ((^.))
+import Control.Lens ((^.), (<>~), view)
+import Data.Maybe
 
 import Diagrams.Core.Transform
 
-import Diagrams.Prelude hiding (fromDirection)
-import Diagrams.ThreeD.Types
-import Diagrams.ThreeD.Shapes
-import Diagrams.ThreeD.Vector
-import Diagrams.ThreeD.Camera
-import Diagrams.ThreeD.Light
+import Diagrams.Prelude.ThreeD as D
 
-import Diagrams.Backend.POVRay.Syntax
+import Diagrams.Backend.POVRay.Syntax as P
 
 import Data.Typeable
 
@@ -51,13 +47,21 @@ instance Backend POVRay R3 where
   type Result  POVRay R3 = String
   data Options POVRay R3 = POVRayOptions
 
-  withStyle _ s _ (Pov is) = Pov $ map (setSurfColor s) is
+  withStyle _ s _ (Pov is) = Pov $ map (setTexture s) is
 
   doRender _ _ (Pov items) = PP.render . PP.vcat . map toSDL $ items
 
 instance Renderable Ellipsoid POVRay where
   render _ (Ellipsoid t) = Pov [SIObject . OFiniteSolid $ s]
     where s = Sphere zeroV 1 [povrayTransf t]
+
+instance Renderable D.Box POVRay where
+    render _ (D.Box t) = Pov [SIObject . OFiniteSolid $ box]
+      where box = P.Box zeroV (VecLit 1 1 1) [povrayTransf t]
+
+instance Renderable Frustum POVRay where
+    render _ (Frustum r0 r1 t) = Pov [SIObject . OFiniteSolid $ f]
+      where f = Cone zeroV r0 (VecLit 0 0 1) r1 False [povrayTransf t]
 
 -- For perspective projection, forLen tells POVRay the horizontal
 -- field of view, and CVRight specifies the aspect ratio of the view.
@@ -73,10 +77,10 @@ instance Renderable (Camera PerspectiveLens) POVRay where
     where
       l = unp3 . camLoc $ c
       (PerspectiveLens h v) = camLens c
-      forUnit = fromDirection . asSpherical . camForward $ c
+      forUnit = fromDirection . camForward $ c
       forLen = 0.5*rightLen/tan(h^.rad/2)
-      upUnit =  fromDirection . asSpherical . camUp $ c
-      rightUnit = fromDirection . asSpherical . camRight $ c
+      upUnit =  fromDirection . camUp $ c
+      rightUnit = fromDirection . camRight $ c
       rightLen = angleRatio h v
       cType = Perspective
 
@@ -90,9 +94,9 @@ instance Renderable (Camera OrthoLens) POVRay where
     where
       l = unp3 . camLoc $ c
       (OrthoLens h v) = camLens c
-      forUnit = fromDirection . asSpherical . camForward $ c
-      upUnit =  fromDirection . asSpherical . camUp $ c
-      rightUnit = fromDirection . asSpherical . camRight $ c
+      forUnit = fromDirection . camForward $ c
+      upUnit =  fromDirection . camUp $ c
+      rightUnit = fromDirection . camRight $ c
 
 instance Renderable ParallelLight POVRay where
     render _ (ParallelLight v c) = Pov [SIObject . OLight $ LightSource pos c' [
@@ -125,13 +129,17 @@ convertColor :: Color c => c -> VColor
 convertColor c = RGB $ vector (r, g, b) where
   (r, g, b, _) = colorToSRGBA c
 
--- Use the FillColor attribute for the diffuse pigment of the object.  Diagrams
--- doesn't have a model for highlights, transparency, etc. yet.
-setSurfColor :: Style v -> SceneItem -> SceneItem
-setSurfColor _ i@(SICamera _ _) = i
-setSurfColor _ i@(SIObject (OLight _)) = i
-setSurfColor s i@(SIObject (OFiniteSolid (Sphere c r mods))) =
-    case getFillColor <$> getAttr s of
-        Nothing -> i
-        Just (SomeColor col) -> SIObject . OFiniteSolid $ Sphere c r (p:mods) where
-          p = OMPigment . PColor . convertColor $ col
+setTexture :: Style R3 -> SceneItem -> SceneItem
+setTexture sty = _SIObject . _OFiniteSolid . mods <>~
+                 [OMTexture (mkFinish sty:mkPigment sty)]
+
+mkPigment :: Style R3 -> [Texture]
+mkPigment sty = Pigment . convertColor . view surfaceColor <$> catMaybes [getAttr sty]
+
+mkFinish :: Style R3 -> Texture
+mkFinish sty = Finish . catMaybes $ [
+                     TAmbient . view _Ambient <$> getAttr sty,
+                     TDiffuse . view _Diffuse <$> getAttr sty,
+                     TSpecular . view (_Highlight . specularIntensity) <$> getAttr sty,
+                     TRoughness . view (_Highlight . specularSize) <$> getAttr sty
+                     ]

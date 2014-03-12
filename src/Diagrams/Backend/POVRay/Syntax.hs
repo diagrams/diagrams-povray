@@ -1,6 +1,9 @@
-{-# LANGUAGE TypeSynonymInstances #-}
-{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE RankNTypes                 #-}
+{-# LANGUAGE TemplateHaskell            #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeSynonymInstances #-}
+
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Diagrams.Backend.POVRay.Syntax
@@ -17,6 +20,7 @@ module Diagrams.Backend.POVRay.Syntax where
 
 import Text.PrettyPrint.HughesPJ
 
+import Control.Lens
 import Data.AdditiveGroup
 import Data.VectorSpace
 
@@ -140,11 +144,11 @@ instance SDL Object where
   toSDL (OFiniteSolid fs) = toSDL fs
   toSDL (OLight l)        = toSDL l
 
-data ObjectModifier = OMPigment Pigment
+data ObjectModifier = OMTexture [Texture]
                     | OMTransf TMatrix
 
 instance SDL ObjectModifier where
-  toSDL (OMPigment p) = toSDL p
+  toSDL (OMTexture p) = block "texture" $ map toSDL p
   toSDL (OMTransf m)  = toSDL m
 
 -- should be a list of 12 doubles
@@ -155,20 +159,39 @@ instance SDL TMatrix where
                        <> (hcat . punctuate comma . map toSDL $ ds)
                        <> text ">"
 
-data Pigment = PColor VColor
+-- May support more pigment & texture options in the future.
+data Texture = Pigment VColor | Finish [TFinish]
 
-instance SDL Pigment where
-  toSDL (PColor c) = block "pigment" [toSDL c]
+data TFinish = TAmbient Double | TDiffuse Double
+             | TSpecular Double | TRoughness Double
+
+instance SDL Texture where
+    toSDL (Pigment c) = block "pigment" [toSDL c]
+    toSDL (Finish  f) = block "finish" $ map toSDL f
+
+instance SDL TFinish where
+    toSDL (TAmbient a) = text "ambient" <+> toSDL a
+    toSDL (TDiffuse d) = text "diffuse" <+> toSDL d
+    toSDL (TSpecular s) = text "specular" <+> toSDL s
+    toSDL (TRoughness r) = text "roughness" <+> toSDL r
 
 ------------------------------------------------------------
 -- Finite solids
 ------------------------------------------------------------
 
 data FiniteSolid = Sphere Vector Double [ObjectModifier]
+                 | Box Vector Vector [ObjectModifier]
+                 | Cone Vector Double Vector Double Bool [ObjectModifier]
 
 instance SDL FiniteSolid where
   toSDL (Sphere c r mods) = block "sphere" (cr : map toSDL mods)
     where cr = toSDL c <> comma <+> toSDL r
+  toSDL (Box p1 p2 mods) = block "box" (corners : map toSDL mods)
+    where corners = toSDL p1 <> comma <+> toSDL p2
+  toSDL (Cone p1 r1 p2 r2 o mods) = block "cone" (geom : open : map toSDL mods) where
+    open = if o then text " open" else empty
+    geom = toSDL p1 <> comma <+> toSDL r1 <> comma <+>
+           toSDL p2 <> comma <+> toSDL r2
 
 ------------------------------------------------------------
 -- Light sources
@@ -184,3 +207,20 @@ data LightModifier = Parallel Vector
 
 instance SDL LightModifier where
     toSDL (Parallel v) = text "parallel" $$ text "point_at" <+> toSDL v
+
+makePrisms ''SceneItem
+makePrisms ''Object
+makePrisms ''ObjectModifier
+
+getMods :: FiniteSolid -> [ObjectModifier]
+getMods (Sphere _ _ ms) = ms
+getMods (Box _ _ ms) = ms
+getMods (Cone _ _ _ _ _ ms) = ms
+
+setMods :: FiniteSolid -> [ObjectModifier] -> FiniteSolid
+setMods (Sphere v r _) new = Sphere v r new
+setMods (Box p1 p2 _) new = Box p1 p2 new
+setMods (Cone p1 r1 p2 r2 o _) new = Cone p1 r1 p2 r2 o new
+
+mods :: Lens' FiniteSolid [ObjectModifier]
+mods = lens getMods setMods
