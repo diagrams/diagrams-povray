@@ -1,7 +1,11 @@
 Name:                diagrams-povray
 Version:             0.1
 Synopsis:            Persistence Of Vision raytracer backend for diagrams EDSL
-Description:         XXX write me
+Description:         This package provides a modular backend for rendering 3D
+                     diagrams created with the diagrams EDSL to the input 
+                     format of the POV-Ray raytracer.  The main point of entry
+                      is `doRender`, which returns a string in POV-Ray format.
+    
 Homepage:            http://projects.haskell.org/diagrams
 License:             BSD3
 License-file:        LICENSE
@@ -11,7 +15,7 @@ Bug-reports:         http://github.com/diagrams/diagrams-povray/issues
 Category:            Graphics
 Build-type:          Simple
 Cabal-version:       >=1.10
-Tested-with:         GHC ==7.0.3
+Tested-with:         GHC == 7.6.3, GHC == 7.8.2
 Source-repository head
   type:     git
   location: http://github.com/diagrams/diagrams-povray.git
@@ -26,5 +30,5 @@ Library
                      pretty >= 1.0.1.2 && < 1.2,
                      vector-space >= 0.8 && < 0.9,
                      colour >= 2.3 && < 2.4,
-                     lens >= 3.9 && < 4.1
+                     lens >= 3.9 && < 4.2
   Default-language:  Haskell2010
