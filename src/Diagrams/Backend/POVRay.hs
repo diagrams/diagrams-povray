@@ -22,18 +22,17 @@ module Diagrams.Backend.POVRay
   ,  Options(..)  -- rendering options
   ) where
 
-import Control.Lens ((^.), (<>~), view)
-import Data.Maybe
-
-import Diagrams.Core.Transform
-
-import Diagrams.Prelude.ThreeD as D
-
-import Diagrams.Backend.POVRay.Syntax as P
-
-import Data.Typeable
-
+import           Control.Lens ((^.), (<>~), view)
+import           Data.Maybe
+import           Data.Tree
+import           Data.Typeable
 import qualified Text.PrettyPrint.HughesPJ as PP
+
+import           Diagrams.Core.Transform
+import           Diagrams.Core.Types
+import           Diagrams.Prelude.ThreeD as D
+
+import           Diagrams.Backend.POVRay.Syntax as P
 
 data POVRay = POVRay
   deriving (Eq,Ord,Read,Show,Typeable)
@@ -47,9 +46,14 @@ instance Backend POVRay R3 where
   type Result  POVRay R3 = String
   data Options POVRay R3 = POVRayOptions
 
-  withStyle _ s _ (Pov is) = Pov $ map (setTexture s) is
-
-  doRender _ _ (Pov items) = PP.render . PP.vcat . map toSDL $ items
+  renderRTree _ _ rt  = PP.render . PP.vcat . map toSDL . unPov . go $ rt where
+    -- pmap :: (SceneItem -> SceneItem) -> Render POVRay R3 -> Render POVRay R3
+    -- pmap f (Pov is) = POV $ map f is
+    unPov (Pov is) = is
+    go :: RTree POVRay R3 a -> Render POVRay R3
+    go (Node (RPrim p) _) = render POVRay p
+    go (Node (RStyle s) ts) = Pov . map (setTexture s) . concat . map (unPov . go) $ ts
+    go (Node _ ts) = Pov . concat . map (unPov . go) $ ts
 
 instance Renderable Ellipsoid POVRay where
   render _ (Ellipsoid t) = Pov [SIObject . OFiniteSolid $ s]
