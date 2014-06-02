@@ -31,5 +31,5 @@ Library
                      pretty >= 1.0.1.2 && < 1.2,
                      vector-space >= 0.8 && < 0.9,
                      colour >= 2.3 && < 2.4,
-                     lens >= 4.0 && < 4.2
+                     lens >= 4.0 && < 4.3
   Default-language:  Haskell2010
