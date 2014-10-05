@@ -30,48 +30,49 @@ import qualified Text.PrettyPrint.HughesPJ as PP
 
 import           Diagrams.Core.Transform
 import           Diagrams.Core.Types
-import           Diagrams.Prelude.ThreeD as D
+import           Diagrams.Prelude as D hiding (view)
+import           Diagrams.ThreeD as D
 
 import           Diagrams.Backend.POVRay.Syntax as P
 
 data POVRay = POVRay
   deriving (Eq,Ord,Read,Show,Typeable)
 
-instance Monoid (Render POVRay R3) where
+instance Monoid (Render POVRay V3 Double) where
   mempty  = Pov []
   (Pov i1) `mappend` (Pov i2) = Pov (i1 ++ i2)
 
-instance Backend POVRay R3 where
-  data Render  POVRay R3 = Pov [SceneItem]
-  type Result  POVRay R3 = String
-  data Options POVRay R3 = POVRayOptions
+instance Backend POVRay V3 Double where
+  data Render  POVRay V3 Double = Pov [SceneItem]
+  type Result  POVRay V3 Double = String
+  data Options POVRay V3 Double = POVRayOptions
 
   renderRTree _ _ rt  = PP.render . PP.vcat . map toSDL . unPov . go $ rt where
-    -- pmap :: (SceneItem -> SceneItem) -> Render POVRay R3 -> Render POVRay R3
+    -- pmap :: (SceneItem -> SceneItem) -> Render POVRay V3 Double -> Render POVRay V3 Double
     -- pmap f (Pov is) = POV $ map f is
     unPov (Pov is) = is
-    go :: RTree POVRay R3 a -> Render POVRay R3
+    go :: RTree POVRay V3 Double a -> Render POVRay V3 Double
     go (Node (RPrim p) _) = render POVRay p
     go (Node (RStyle s) ts) = Pov . map (setTexture s) . concat . map (unPov . go) $ ts
     go (Node _ ts) = Pov . concat . map (unPov . go) $ ts
 
-instance Renderable Ellipsoid POVRay where
+instance Renderable (Ellipsoid Double) POVRay where
   render _ (Ellipsoid t) = Pov [SIObject . OFiniteSolid $ s]
-    where s = Sphere zeroV 1 [povrayTransf t]
+    where s = Sphere zero 1 [povrayTransf t]
 
-instance Renderable D.Box POVRay where
+instance Renderable (D.Box Double) POVRay where
     render _ (D.Box t) = Pov [SIObject . OFiniteSolid $ box]
-      where box = P.Box zeroV (VecLit 1 1 1) [povrayTransf t]
+      where box = P.Box zero (V3 1 1 1) [povrayTransf t]
 
-instance Renderable Frustum POVRay where
+instance Renderable (Frustum Double) POVRay where
     render _ (Frustum r0 r1 t) = Pov [SIObject . OFiniteSolid $ f]
-      where f = Cone zeroV r0 (VecLit 0 0 1) r1 False [povrayTransf t]
+      where f = Cone zero r0 (V3 0 0 1) r1 False [povrayTransf t]
 
 -- For perspective projection, forLen tells POVRay the horizontal
 -- field of view, and CVRight specifies the aspect ratio of the view.
 -- For orthographic projection, rightLen & upLen are the actual window
 -- dimensions, and forLen is ignored by POVRay.
-instance Renderable (Camera PerspectiveLens) POVRay where
+instance Renderable (Camera PerspectiveLens Double) POVRay where
   render _ c = Pov [ SICamera cType [
     CIVector . CVLocation . vector $ l
     , CIVector . CVDirection . vector . unr3 $ forLen *^ forUnit
@@ -88,7 +89,7 @@ instance Renderable (Camera PerspectiveLens) POVRay where
       rightLen = angleRatio h v
       cType = Perspective
 
-instance Renderable (Camera OrthoLens) POVRay where
+instance Renderable (Camera OrthoLens Double) POVRay where
   render _ c = Pov [ SICamera Orthographic [
     CIVector . CVLocation . vector $ l
     , CIVector . CVDirection . vector . unr3 $ forUnit
@@ -102,20 +103,20 @@ instance Renderable (Camera OrthoLens) POVRay where
       upUnit =  fromDirection . camUp $ c
       rightUnit = fromDirection . camRight $ c
 
-instance Renderable ParallelLight POVRay where
-    render _ (ParallelLight v c) = Pov [SIObject . OLight $ LightSource pos c' [
+instance Renderable (ParallelLight Double) POVRay where
+    render _ (ParallelLight p c) = Pov [SIObject . OLight $ LightSource pos c' [
         Parallel v' ]] where
-      pos = vector . unp3 $ origin .-^ (1000 *^ v)
+      pos = vector . unp3 $ origin .-^ (1000 *^ p)
       v' =  vector . unp3 $ origin
       c' = convertColor c
 
-instance Renderable PointLight POVRay where
+instance Renderable (PointLight Double) POVRay where
     render _ (PointLight p c) =
         Pov [SIObject . OLight $ LightSource pos c' []] where
           pos = vector $ unp3 p
           c' = convertColor c
 
-povrayTransf :: T3 -> ObjectModifier
+povrayTransf :: Transformation V3 Double -> ObjectModifier
 povrayTransf t = OMTransf $
                  TMatrix [ v00, v01, v02
                          , v10, v11, v12
@@ -126,21 +127,18 @@ povrayTransf t = OMTransf $
         (unr3 -> (v20, v21, v22)) = apply t (r3 (0,0,1))
         (unr3 -> (v30, v31, v32)) = transl t
 
-vector :: (Double, Double, Double) -> Vector
-vector (x, y, z) = VecLit x y z
-
 convertColor :: Color c => c -> VColor
 convertColor c = RGB $ vector (r, g, b) where
   (r, g, b, _) = colorToSRGBA c
 
-setTexture :: Style R3 -> SceneItem -> SceneItem
+setTexture :: Style V3 Double -> SceneItem -> SceneItem
 setTexture sty = _SIObject . _OFiniteSolid . mods <>~
                  [OMTexture (mkFinish sty:mkPigment sty)]
 
-mkPigment :: Style R3 -> [Texture]
+mkPigment :: Style V3 Double -> [P.Texture]
 mkPigment sty = Pigment . convertColor . view surfaceColor <$> catMaybes [getAttr sty]
 
-mkFinish :: Style R3 -> Texture
+mkFinish :: Style V3 Double -> P.Texture
 mkFinish sty = Finish . catMaybes $ [
                      TAmbient . view _Ambient <$> getAttr sty,
                      TDiffuse . view _Diffuse <$> getAttr sty,

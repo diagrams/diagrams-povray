@@ -19,10 +19,9 @@
 module Diagrams.Backend.POVRay.Syntax where
 
 import Text.PrettyPrint.HughesPJ
+import Linear
 
 import Control.Lens
-import Data.AdditiveGroup
-import Data.VectorSpace
 
 ------------------------------------------------------------
 -- Pretty-printing
@@ -63,19 +62,10 @@ instance SDL s => SDL (Maybe s) where
 
 type Identifier = String
 
-data Vector = VecLit Double Double Double
+type Vector = V3 Double
 
 instance SDL Vector where
-  toSDL (VecLit x y z) = text "<" <> hsep (punctuate comma (map toSDL [x,y,z])) <> text ">"
-
-instance AdditiveGroup Vector where
-  zeroV = VecLit 0 0 0
-  (VecLit x1 y1 z1) ^+^ (VecLit x2 y2 z2) = VecLit (x1+x2) (y1+y2) (z1+z2)
-  negateV (VecLit x y z) = VecLit (-x) (-y) (-z)
-
-instance VectorSpace Vector where
-  type Scalar Vector = Double
-  d *^ (VecLit x y z) = VecLit (d*x) (d*y) (d*z)
+  toSDL (V3 x y z) = text "<" <> hsep (punctuate comma (map toSDL [x,y,z])) <> text ">"
 
 data VColor = RGB Vector
 
