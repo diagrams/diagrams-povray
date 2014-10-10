@@ -31,7 +31,6 @@ import qualified Text.PrettyPrint.HughesPJ as PP
 import           Diagrams.Core.Transform
 import           Diagrams.Core.Types
 import           Diagrams.Prelude as D hiding (view)
-import           Diagrams.ThreeD as D
 
 import           Diagrams.Backend.POVRay.Syntax as P
 
@@ -74,13 +73,13 @@ instance Renderable (Frustum Double) POVRay where
 -- dimensions, and forLen is ignored by POVRay.
 instance Renderable (Camera PerspectiveLens Double) POVRay where
   render _ c = Pov [ SICamera cType [
-    CIVector . CVLocation . vector $ l
-    , CIVector . CVDirection . vector . unr3 $ forLen *^ forUnit
-    , CIVector . CVUp . vector . unr3 $ upUnit
-    , CIVector . CVRight . vector . unr3 $ rightLen *^ rightUnit
+    CIVector . CVLocation $ l
+    , CIVector . CVDirection $ forLen *^ forUnit
+    , CIVector . CVUp  $ upUnit
+    , CIVector . CVRight $ rightLen *^ rightUnit
     ]]
     where
-      l = unp3 . camLoc $ c
+      l = camLoc c .-. origin
       (PerspectiveLens h v) = camLens c
       forUnit = fromDirection . camForward $ c
       forLen = 0.5*rightLen/tan(h^.rad/2)
@@ -91,29 +90,28 @@ instance Renderable (Camera PerspectiveLens Double) POVRay where
 
 instance Renderable (Camera OrthoLens Double) POVRay where
   render _ c = Pov [ SICamera Orthographic [
-    CIVector . CVLocation . vector $ l
-    , CIVector . CVDirection . vector . unr3 $ forUnit
-    , CIVector . CVUp . vector . unr3 $ v *^ upUnit
-    , CIVector . CVRight . vector . unr3 $ h *^ rightUnit
+    CIVector . CVLocation  $ l
+    , CIVector . CVDirection $ forUnit
+    , CIVector . CVUp  $ v *^ upUnit
+    , CIVector . CVRight $ h *^ rightUnit
     ]]
     where
-      l = unp3 . camLoc $ c
+      l = camLoc c .-. origin
       (OrthoLens h v) = camLens c
       forUnit = fromDirection . camForward $ c
       upUnit =  fromDirection . camUp $ c
       rightUnit = fromDirection . camRight $ c
 
 instance Renderable (ParallelLight Double) POVRay where
-    render _ (ParallelLight p c) = Pov [SIObject . OLight $ LightSource pos c' [
-        Parallel v' ]] where
-      pos = vector . unp3 $ origin .-^ (1000 *^ p)
-      v' =  vector . unp3 $ origin
+    render _ (ParallelLight v c) = Pov [SIObject . OLight $ LightSource pos c' [
+        Parallel zero ]] where
+      pos = negated (1000 *^ v)
       c' = convertColor c
 
 instance Renderable (PointLight Double) POVRay where
     render _ (PointLight p c) =
         Pov [SIObject . OLight $ LightSource pos c' []] where
-          pos = vector $ unp3 p
+          pos = p .-. origin
           c' = convertColor c
 
 povrayTransf :: Transformation V3 Double -> ObjectModifier
@@ -128,7 +126,7 @@ povrayTransf t = OMTransf $
         (unr3 -> (v30, v31, v32)) = transl t
 
 convertColor :: Color c => c -> VColor
-convertColor c = RGB $ vector (r, g, b) where
+convertColor c = RGB $ r3 (r, g, b) where
   (r, g, b, _) = colorToSRGBA c
 
 setTexture :: Style V3 Double -> SceneItem -> SceneItem
