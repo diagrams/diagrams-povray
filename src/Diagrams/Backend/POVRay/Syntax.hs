@@ -19,7 +19,7 @@
 module Diagrams.Backend.POVRay.Syntax where
 
 import Text.PrettyPrint.HughesPJ
-import Linear
+import Diagrams.ThreeD.Types
 
 import Control.Lens
 
@@ -106,8 +106,8 @@ data CameraVector = CVLocation  Vector
                   | CVSky       Vector
 
 instance SDL CameraType where
-    toSDL Perspective = empty
-    toSDL Orthographic = text "orthographic"
+  toSDL Perspective = empty
+  toSDL Orthographic = text "orthographic"
 
 instance SDL CameraVector where
   toSDL (CVLocation v)  = text "location"  <+> toSDL v
@@ -156,14 +156,14 @@ data TFinish = TAmbient Double | TDiffuse Double
              | TSpecular Double | TRoughness Double
 
 instance SDL Texture where
-    toSDL (Pigment c) = block "pigment" [toSDL c]
-    toSDL (Finish  f) = block "finish" $ map toSDL f
+	toSDL (Pigment c) = block "pigment" [toSDL c]
+	toSDL (Finish  f) = block "finish" $ map toSDL f
 
 instance SDL TFinish where
-    toSDL (TAmbient a) = text "ambient" <+> toSDL a
-    toSDL (TDiffuse d) = text "diffuse" <+> toSDL d
-    toSDL (TSpecular s) = text "specular" <+> toSDL s
-    toSDL (TRoughness r) = text "roughness" <+> toSDL r
+	toSDL (TAmbient a)   = text "ambient" <+> toSDL a
+	toSDL (TDiffuse d)   = text "diffuse" <+> toSDL d
+	toSDL (TSpecular s)  = text "specular" <+> toSDL s
+	toSDL (TRoughness r) = text "roughness" <+> toSDL r
 
 ------------------------------------------------------------
 -- Finite solids
@@ -203,13 +203,13 @@ makePrisms ''Object
 makePrisms ''ObjectModifier
 
 getMods :: FiniteSolid -> [ObjectModifier]
-getMods (Sphere _ _ ms) = ms
-getMods (Box _ _ ms) = ms
+getMods (Sphere _ _ ms)     = ms
+getMods (Box _ _ ms)        = ms
 getMods (Cone _ _ _ _ _ ms) = ms
 
 setMods :: FiniteSolid -> [ObjectModifier] -> FiniteSolid
-setMods (Sphere v r _) new = Sphere v r new
-setMods (Box p1 p2 _) new = Box p1 p2 new
+setMods (Sphere v r _) new         = Sphere v r new
+setMods (Box p1 p2 _) new          = Box p1 p2 new
 setMods (Cone p1 r1 p2 r2 o _) new = Cone p1 r1 p2 r2 o new
 
 mods :: Lens' FiniteSolid [ObjectModifier]
