@@ -16,12 +16,11 @@
 --
 -----------------------------------------------------------------------------
 module Diagrams.Backend.POVRay
-
-  ( POVRay(..)       -- backend token
-  ,  Options(..)  -- rendering options
+  ( POVRay (..)  -- backend token
+  , Options (..) -- rendering options
   ) where
 
-import           Control.Lens                   (view, (<>~), (^.))
+import           Control.Lens                   ((<>~), (^.), (^?), toListOf, to, _Just)
 import           Data.Maybe
 import           Data.Tree
 import           Data.Typeable
@@ -115,7 +114,7 @@ instance Renderable (PointLight Double) POVRay where
   render _ (PointLight (P pos) (convertColor -> c))
     = Pov [SIObject . OLight $ LightSource pos c []]
 
-povrayTransf :: Transformation V3 Double -> ObjectModifier
+povrayTransf :: T3 Double -> ObjectModifier
 povrayTransf t = OMTransf $ TMatrix (concat $ matrixHomRep t)
 
 convertColor :: Color c => c -> VColor
@@ -126,12 +125,13 @@ setTexture sty = _SIObject . _OFiniteSolid . mods <>~
                    [OMTexture (mkFinish sty:mkPigment sty)]
 
 mkPigment :: Style V3 Double -> [P.Texture]
-mkPigment sty = Pigment . convertColor . view surfaceColor <$> catMaybes [getAttr sty]
+mkPigment = toListOf (_sc . _Just . to (Pigment . convertColor))
 
 mkFinish :: Style V3 Double -> P.Texture
 mkFinish sty = Finish . catMaybes $ [
-  TAmbient . view _Ambient <$> getAttr sty,
-  TDiffuse . view _Diffuse <$> getAttr sty,
-  TSpecular . view (_Highlight . specularIntensity) <$> getAttr sty,
-  TRoughness . view (_Highlight . specularSize) <$> getAttr sty
-  ]
+  TAmbient   <$> sty ^. _ambient,
+  TDiffuse   <$> sty ^. _diffuse,
+  TSpecular  <$> hl  ^? _Just . specularIntensity,
+  TRoughness <$> hl  ^? _Just . specularSize
+  ] where hl = sty ^. _highlight
+
