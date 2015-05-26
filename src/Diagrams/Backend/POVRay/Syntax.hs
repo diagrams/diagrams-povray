@@ -156,14 +156,14 @@ data TFinish = TAmbient Double | TDiffuse Double
              | TSpecular Double | TRoughness Double
 
 instance SDL Texture where
-	toSDL (Pigment c) = block "pigment" [toSDL c]
-	toSDL (Finish  f) = block "finish" $ map toSDL f
+    toSDL (Pigment c) = block "pigment" [toSDL c]
+    toSDL (Finish  f) = block "finish" $ map toSDL f
 
 instance SDL TFinish where
-	toSDL (TAmbient a)   = text "ambient" <+> toSDL a
-	toSDL (TDiffuse d)   = text "diffuse" <+> toSDL d
-	toSDL (TSpecular s)  = text "specular" <+> toSDL s
-	toSDL (TRoughness r) = text "roughness" <+> toSDL r
+    toSDL (TAmbient a)   = text "ambient" <+> toSDL a
+    toSDL (TDiffuse d)   = text "diffuse" <+> toSDL d
+    toSDL (TSpecular s)  = text "specular" <+> toSDL s
+    toSDL (TRoughness r) = text "roughness" <+> toSDL r
 
 ------------------------------------------------------------
 -- Finite solids

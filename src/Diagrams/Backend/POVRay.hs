@@ -118,7 +118,7 @@ povrayTransf :: T3 Double -> ObjectModifier
 povrayTransf t = OMTransf $ TMatrix (concat $ matrixHomRep t)
 
 convertColor :: Color c => c -> VColor
-convertColor (colorToSRGBA -> (r,g,b,_)) = RGB $ V3 r g b
+convertColor (colorToSRGBA -> (r,g,b,_)) = P.RGB $ V3 r g b
 
 setTexture :: Style V3 Double -> SceneItem -> SceneItem
 setTexture sty = _SIObject . _OFiniteSolid . mods <>~
@@ -134,4 +134,3 @@ mkFinish sty = Finish . catMaybes $ [
   TSpecular  <$> hl  ^? _Just . specularIntensity,
   TRoughness <$> hl  ^? _Just . specularSize
   ] where hl = sty ^. _highlight
-
