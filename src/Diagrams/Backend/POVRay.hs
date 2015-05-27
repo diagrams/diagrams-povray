@@ -20,7 +20,6 @@ module Diagrams.Backend.POVRay
   , Options (..) -- rendering options
   ) where
 
-import           Control.Lens                   ((<>~), (^.), (^?), toListOf, to, _Just)
 import           Data.Maybe
 import           Data.Tree
 import           Data.Typeable
