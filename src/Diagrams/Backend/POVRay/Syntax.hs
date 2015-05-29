@@ -68,6 +68,7 @@ instance SDL Vector where
   toSDL (V3 x y z) = text "<" <> hsep (punctuate comma (map toSDL [x,y,z])) <> text ">"
 
 data VColor = RGB Vector
+            deriving Show
 
 instance SDL VColor where
   toSDL (RGB v) = text "rgb" <+> toSDL v
@@ -79,6 +80,7 @@ instance SDL VColor where
 -- | Top-level items that can occur in a scene.
 data SceneItem = SICamera CameraType [CameraItem]
                | SIObject Object
+               deriving Show
 
 instance SDL SceneItem where
   toSDL (SICamera cType cItems) = block "camera"
@@ -91,12 +93,14 @@ instance SDL SceneItem where
 
 data CameraItem = CIVector CameraVector
                 | CIModifier CameraModifier
+                deriving Show
 
 instance SDL CameraItem where
   toSDL (CIVector cv)   = toSDL cv
   toSDL (CIModifier cm) = toSDL cm
 
 data CameraType = Perspective | Orthographic  -- TODO add more types?
+                deriving Show
 
 
 data CameraVector = CVLocation  Vector
@@ -104,6 +108,7 @@ data CameraVector = CVLocation  Vector
                   | CVUp        Vector
                   | CVDirection Vector
                   | CVSky       Vector
+                  deriving Show
 
 instance SDL CameraType where
   toSDL Perspective = empty
@@ -118,6 +123,7 @@ instance SDL CameraVector where
 
 data CameraModifier = CMLookAt Vector
                     | CMAngle Double -- degrees
+                    deriving Show
 
 instance SDL CameraModifier where
   toSDL (CMLookAt v) = text "look_at" <+> toSDL v
@@ -129,6 +135,7 @@ instance SDL CameraModifier where
 
 data Object = OFiniteSolid FiniteSolid
             | OLight LightSource
+            deriving Show
 
 instance SDL Object where
   toSDL (OFiniteSolid fs) = toSDL fs
@@ -136,6 +143,7 @@ instance SDL Object where
 
 data ObjectModifier = OMTexture [Texture]
                     | OMTransf TMatrix
+                    deriving Show
 
 instance SDL ObjectModifier where
   toSDL (OMTexture p) = block "texture" $ map toSDL p
@@ -143,6 +151,7 @@ instance SDL ObjectModifier where
 
 -- should be a list of 12 doubles
 data TMatrix = TMatrix [Double]
+             deriving Show
 
 instance SDL TMatrix where
   toSDL (TMatrix ds) = text "matrix <"
@@ -151,9 +160,11 @@ instance SDL TMatrix where
 
 -- May support more pigment & texture options in the future.
 data Texture = Pigment VColor | Finish [TFinish]
+             deriving Show
 
 data TFinish = TAmbient Double | TDiffuse Double
              | TSpecular Double | TRoughness Double
+             deriving Show
 
 instance SDL Texture where
     toSDL (Pigment c) = block "pigment" [toSDL c]
@@ -172,6 +183,7 @@ instance SDL TFinish where
 data FiniteSolid = Sphere Vector Double [ObjectModifier]
                  | Box Vector Vector [ObjectModifier]
                  | Cone Vector Double Vector Double Bool [ObjectModifier]
+                 deriving Show
 
 instance SDL FiniteSolid where
   toSDL (Sphere c r mods) = block "sphere" (cr : map toSDL mods)
@@ -188,12 +200,14 @@ instance SDL FiniteSolid where
 ------------------------------------------------------------
 
 data LightSource = LightSource Vector VColor [LightModifier]
+                 deriving Show
 
 instance SDL LightSource where
   toSDL (LightSource loc c mods) = block "light_source" (lc : map toSDL mods)
     where lc = toSDL loc <> comma <+> toSDL c
 
 data LightModifier = Parallel Vector
+                   deriving Show
 
 instance SDL LightModifier where
     toSDL (Parallel v) = text "parallel" $$ text "point_at" <+> toSDL v
