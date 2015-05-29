@@ -1,7 +1,7 @@
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE RankNTypes                 #-}
-{-# LANGUAGE TemplateHaskell            #-}
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE RankNTypes           #-}
+{-# LANGUAGE TemplateHaskell      #-}
+{-# LANGUAGE TypeFamilies         #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 
 -----------------------------------------------------------------------------
@@ -18,10 +18,10 @@
 -----------------------------------------------------------------------------
 module Diagrams.Backend.POVRay.Syntax where
 
-import Text.PrettyPrint.HughesPJ
-import Diagrams.ThreeD.Types
+import           Diagrams.ThreeD.Types
+import           Text.PrettyPrint.HughesPJ
 
-import Control.Lens
+import           Control.Lens
 
 ------------------------------------------------------------
 -- Pretty-printing
