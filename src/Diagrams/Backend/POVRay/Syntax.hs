@@ -241,10 +241,10 @@ setMods :: FiniteSolid -> [ObjectModifier] -> FiniteSolid
 setMods (Sphere v r _) new         = Sphere v r new
 setMods (Box p1 p2 _) new          = Box p1 p2 new
 setMods (Cone p1 r1 p2 r2 o _) new = Cone p1 r1 p2 r2 o new
-setMods (Union fs ms) new = Union fs new
-setMods (Merge fs ms) new = Merge fs new
-setMods (Intersection fs ms) new = Intersection fs new
-setMods (Difference fs ms) new = Difference fs new
+setMods (Union fs _) new = Union fs new
+setMods (Merge fs _) new = Merge fs new
+setMods (Intersection fs _) new = Intersection fs new
+setMods (Difference fs _) new = Difference fs new
 
 mods :: Lens' FiniteSolid [ObjectModifier]
 mods = lens getMods setMods

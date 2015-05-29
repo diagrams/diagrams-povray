@@ -87,7 +87,7 @@ instance ToSolid (CSG Double) where
     toSolid (CsgFrustum prim) = toSolid prim
     toSolid (CsgUnion ps) = Union (map toSolid ps) []
     toSolid (CsgIntersection ps) = Intersection (map toSolid ps) []
-    toSolid (CsgDifference p1 p2) = Difference [toSolid p1, toSolid p2] []
+    toSolid (CsgDifference pr1 pr2) = Difference [toSolid pr1, toSolid pr2] []
 
 instance Renderable (CSG Double) POVRay where
   render _ = wrapSolid . toSolid
