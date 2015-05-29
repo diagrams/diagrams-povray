@@ -183,6 +183,10 @@ instance SDL TFinish where
 data FiniteSolid = Sphere Vector Double [ObjectModifier]
                  | Box Vector Vector [ObjectModifier]
                  | Cone Vector Double Vector Double Bool [ObjectModifier]
+                 | Union [FiniteSolid] [ObjectModifier] -- probably not what you want
+                 | Merge [FiniteSolid] [ObjectModifier] -- real CSG union
+                 | Intersection [FiniteSolid] [ObjectModifier]
+                 | Difference [FiniteSolid] [ObjectModifier]
                  deriving Show
 
 instance SDL FiniteSolid where
@@ -194,6 +198,14 @@ instance SDL FiniteSolid where
     open = if o then text " open" else empty
     geom = toSDL p1 <> comma <+> toSDL r1 <> comma <+>
            toSDL p2 <> comma <+> toSDL r2
+  toSDL (Union solids mods) =
+      block "union" $ map toSDL solids ++ map toSDL mods
+  toSDL (Merge solids mods) =
+      block "merge" $ map toSDL solids ++ map toSDL mods
+  toSDL (Intersection solids mods) =
+      block "intersection" $ map toSDL solids ++ map toSDL mods
+  toSDL (Difference solids mods) =
+      block "difference" $ map toSDL solids ++ map toSDL mods
 
 ------------------------------------------------------------
 -- Light sources
@@ -220,11 +232,19 @@ getMods :: FiniteSolid -> [ObjectModifier]
 getMods (Sphere _ _ ms)     = ms
 getMods (Box _ _ ms)        = ms
 getMods (Cone _ _ _ _ _ ms) = ms
+getMods (Union _ ms) = ms
+getMods (Merge _ ms) = ms
+getMods (Intersection _ ms) = ms
+getMods (Difference _ ms) = ms
 
 setMods :: FiniteSolid -> [ObjectModifier] -> FiniteSolid
 setMods (Sphere v r _) new         = Sphere v r new
 setMods (Box p1 p2 _) new          = Box p1 p2 new
 setMods (Cone p1 r1 p2 r2 o _) new = Cone p1 r1 p2 r2 o new
+setMods (Union fs ms) new = Union fs new
+setMods (Merge fs ms) new = Merge fs new
+setMods (Intersection fs ms) new = Intersection fs new
+setMods (Difference fs ms) new = Difference fs new
 
 mods :: Lens' FiniteSolid [ObjectModifier]
 mods = lens getMods setMods

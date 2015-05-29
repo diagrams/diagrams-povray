@@ -46,26 +46,51 @@ instance Backend POVRay V3 Double where
   type Result  POVRay V3 Double = String
   data Options POVRay V3 Double = POVRayOptions
 
-  renderRTree _ _ rt  = PP.render . PP.vcat . map toSDL . unPov . go $ rt where
+  renderRTree _ _ rt  = PP.render . PP.vcat . map toSDL . go $ rt where
     -- pmap :: (SceneItem -> SceneItem) -> Render POVRay V3 Double -> Render POVRay V3 Double
     -- pmap f (Pov is) = POV $ map f is
-    unPov (Pov is) = is
-    go :: RTree POVRay V3 Double a -> Render POVRay V3 Double
-    go (Node (RPrim p) _)   = render POVRay p
-    go (Node (RStyle s) ts) = Pov . map (setTexture s) . concatMap (unPov . go) $ ts
-    go (Node _ ts)          = Pov . concatMap (unPov . go) $ ts
+    go :: RTree POVRay V3 Double a -> [SceneItem]
+    go (Node (RPrim p) _)   = unPov $ render POVRay p
+    go (Node (RStyle s) ts) = map (setTexture s) . concatMap go $ ts
+    go (Node _ ts)          = concatMap go $ ts
 
-instance Renderable (Ellipsoid Double) POVRay where
-  render _ (Ellipsoid t) = Pov [SIObject . OFiniteSolid $ s]
-    where s = Sphere zero 1 [povrayTransf t]
+unPov :: Render POVRay V3 Double -> [SceneItem]
+unPov (Pov is) = is
+
+wrapSolid :: P.FiniteSolid -> Render POVRay V3 Double
+wrapSolid = Pov . (:[]) . SIObject . OFiniteSolid
+
+class ToSolid t where
+    toSolid :: t -> P.FiniteSolid
+
+instance ToSolid (Ellipsoid Double) where
+    toSolid (Ellipsoid t) = Sphere zero 1 [povrayTransf t]
+
+instance Renderable  (Ellipsoid Double) POVRay where
+    render _ = wrapSolid . toSolid
+
+instance ToSolid (D.Box Double) where
+    toSolid (D.Box t) = P.Box zero (V3 1 1 1) [povrayTransf t]
 
 instance Renderable (D.Box Double) POVRay where
-  render _ (D.Box t) = Pov [SIObject . OFiniteSolid $ box]
-    where box = P.Box zero (V3 1 1 1) [povrayTransf t]
+    render _ = wrapSolid . toSolid
+
+instance ToSolid (Frustum Double) where
+    toSolid (Frustum r0 r1 t) = Cone zero r0 (V3 0 0 1) r1 False [povrayTransf t]
 
 instance Renderable (Frustum Double) POVRay where
-  render _ (Frustum r0 r1 t) = Pov [SIObject . OFiniteSolid $ f]
-    where f = Cone zero r0 (V3 0 0 1) r1 False [povrayTransf t]
+    render _ = wrapSolid . toSolid
+
+instance ToSolid (CSG Double) where
+    toSolid (CsgEllipsoid prim) = toSolid prim
+    toSolid (CsgBox prim) = toSolid prim
+    toSolid (CsgFrustum prim) = toSolid prim
+    toSolid (CsgUnion ps) = Union (map toSolid ps) []
+    toSolid (CsgIntersection ps) = Intersection (map toSolid ps) []
+    toSolid (CsgDifference p1 p2) = Difference [toSolid p1, toSolid p2] []
+
+instance Renderable (CSG Double) POVRay where
+  render _ = wrapSolid . toSolid
 
 -- For perspective projection, forLen tells POVRay the horizontal
 -- field of view, and CVRight specifies the aspect ratio of the view.
