@@ -20,14 +20,16 @@ module Diagrams.Backend.POVRay
   , Options (..) -- rendering options
   ) where
 
+import           Control.Lens                   (view)
 import           Data.Maybe
+import           Data.Monoid                    (Last (..))
 import           Data.Tree
 import           Data.Typeable
 import qualified Text.PrettyPrint.HughesPJ      as PP
 
 import           Diagrams.Core.Transform
 import           Diagrams.Core.Types
-import           Diagrams.Prelude               as D hiding (view)
+import           Diagrams.Prelude               as D hiding (Last (..), view)
 
 import           Diagrams.Backend.POVRay.Syntax as P
 
@@ -47,8 +49,6 @@ instance Backend POVRay V3 Double where
   data Options POVRay V3 Double = POVRayOptions
 
   renderRTree _ _ rt  = PP.render . PP.vcat . map toSDL . go $ rt where
-    -- pmap :: (SceneItem -> SceneItem) -> Render POVRay V3 Double -> Render POVRay V3 Double
-    -- pmap f (Pov is) = POV $ map f is
     go :: RTree POVRay V3 Double a -> [SceneItem]
     go (Node (RPrim p) _)   = unPov $ render POVRay p
     go (Node (RStyle s) ts) = map (setTexture s) . concatMap go $ ts
@@ -64,19 +64,19 @@ class ToSolid t where
     toSolid :: t -> P.FiniteSolid
 
 instance ToSolid (Ellipsoid Double) where
-    toSolid (Ellipsoid t) = Sphere zero 1 [povrayTransf t]
+    toSolid (Ellipsoid t) = Sphere zero 1 (povrayTransf t)
 
 instance Renderable  (Ellipsoid Double) POVRay where
     render _ = wrapSolid . toSolid
 
 instance ToSolid (D.Box Double) where
-    toSolid (D.Box t) = P.Box zero (V3 1 1 1) [povrayTransf t]
+    toSolid (D.Box t) = P.Box zero (V3 1 1 1) (povrayTransf t)
 
 instance Renderable (D.Box Double) POVRay where
     render _ = wrapSolid . toSolid
 
 instance ToSolid (Frustum Double) where
-    toSolid (Frustum r0 r1 t) = Cone zero r0 (V3 0 0 1) r1 False [povrayTransf t]
+    toSolid (Frustum r0 r1 t) = Cone zero r0 (V3 0 0 1) r1 False (povrayTransf t)
 
 instance Renderable (Frustum Double) POVRay where
     render _ = wrapSolid . toSolid
@@ -85,9 +85,9 @@ instance ToSolid (CSG Double) where
     toSolid (CsgEllipsoid prim) = toSolid prim
     toSolid (CsgBox prim) = toSolid prim
     toSolid (CsgFrustum prim) = toSolid prim
-    toSolid (CsgUnion ps) = Union (map toSolid ps) []
-    toSolid (CsgIntersection ps) = Intersection (map toSolid ps) []
-    toSolid (CsgDifference pr1 pr2) = Difference [toSolid pr1, toSolid pr2] []
+    toSolid (CsgUnion ps) = Union (map toSolid ps) mempty
+    toSolid (CsgIntersection ps) = Intersection (map toSolid ps) mempty
+    toSolid (CsgDifference pr1 pr2) = Difference [toSolid pr1, toSolid pr2] mempty
 
 instance Renderable (CSG Double) POVRay where
   render _ = wrapSolid . toSolid
@@ -139,22 +139,24 @@ instance Renderable (PointLight Double) POVRay where
     = Pov [SIObject . OLight $ LightSource pos c []]
 
 povrayTransf :: T3 Double -> ObjectModifier
-povrayTransf t = OMTransf $ TMatrix (concat $ matrixHomRep t)
+povrayTransf t = OM mempty . Last . Just . TMatrix . concat . matrixHomRep $ t
 
 convertColor :: Color c => c -> VColor
 convertColor (colorToSRGBA -> (r,g,b,_)) = P.RGB $ V3 r g b
 
 setTexture :: Style V3 Double -> SceneItem -> SceneItem
 setTexture sty = _SIObject . _OFiniteSolid . mods <>~
-                   [OMTexture (mkFinish sty:mkPigment sty)]
+                 (OM (Texture (mkPigment sty) (mkFinish sty)) mempty)
 
-mkPigment :: Style V3 Double -> [P.Texture]
-mkPigment = toListOf (_sc . _Just . to (Pigment . convertColor))
+mkPigment :: Style V3 Double -> Last VColor
+mkPigment = Last . fmap convertColor . view _sc
 
-mkFinish :: Style V3 Double -> P.Texture
-mkFinish sty = Finish . catMaybes $ [
-  TAmbient   <$> sty ^. _ambient,
-  TDiffuse   <$> sty ^. _diffuse,
-  TSpecular  <$> hl  ^? _Just . specularIntensity,
-  TRoughness <$> hl  ^? _Just . specularSize
-  ] where hl = sty ^. _highlight
+  -- toListOf (_sc . _Just . to (Pigment . convertColor))
+
+mkFinish :: Style V3 Double -> TFinish
+mkFinish sty = TFinish
+               (Last $ sty ^. _ambient)
+               (Last $ sty ^. _diffuse)
+               (Last $ hl  ^? _Just . specularIntensity)
+               (Last $ hl  ^? _Just . specularSize)
+  where hl = sty ^. _highlight
