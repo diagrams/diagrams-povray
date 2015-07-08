@@ -20,14 +20,16 @@ module Diagrams.Backend.POVRay
   , Options (..) -- rendering options
   ) where
 
+import           Control.Lens                   (view)
 import           Data.Maybe
+import           Data.Monoid                    (Last (..))
 import           Data.Tree
 import           Data.Typeable
 import qualified Text.PrettyPrint.HughesPJ      as PP
 
 import           Diagrams.Core.Transform
 import           Diagrams.Core.Types
-import           Diagrams.Prelude               as D hiding (view)
+import           Diagrams.Prelude               as D hiding (Last (..), view)
 
 import           Diagrams.Backend.POVRay.Syntax as P
 
@@ -57,15 +59,15 @@ instance Backend POVRay V3 Double where
 
 instance Renderable (Ellipsoid Double) POVRay where
   render _ (Ellipsoid t) = Pov [SIObject . OFiniteSolid $ s]
-    where s = Sphere zero 1 [povrayTransf t]
+    where s = Sphere zero 1 (povrayTransf t)
 
 instance Renderable (D.Box Double) POVRay where
   render _ (D.Box t) = Pov [SIObject . OFiniteSolid $ box]
-    where box = P.Box zero (V3 1 1 1) [povrayTransf t]
+    where box = P.Box zero (V3 1 1 1) (povrayTransf t)
 
 instance Renderable (Frustum Double) POVRay where
   render _ (Frustum r0 r1 t) = Pov [SIObject . OFiniteSolid $ f]
-    where f = Cone zero r0 (V3 0 0 1) r1 False [povrayTransf t]
+    where f = Cone zero r0 (V3 0 0 1) r1 False (povrayTransf t)
 
 -- For perspective projection, forLen tells POVRay the horizontal
 -- field of view, and CVRight specifies the aspect ratio of the view.
@@ -114,22 +116,24 @@ instance Renderable (PointLight Double) POVRay where
     = Pov [SIObject . OLight $ LightSource pos c []]
 
 povrayTransf :: T3 Double -> ObjectModifier
-povrayTransf t = OMTransf $ TMatrix (concat $ matrixHomRep t)
+povrayTransf t = OM mempty . Last . Just . TMatrix . concat . matrixHomRep $ t
 
 convertColor :: Color c => c -> VColor
 convertColor (colorToSRGBA -> (r,g,b,_)) = P.RGB $ V3 r g b
 
 setTexture :: Style V3 Double -> SceneItem -> SceneItem
 setTexture sty = _SIObject . _OFiniteSolid . mods <>~
-                   [OMTexture (mkFinish sty:mkPigment sty)]
+                 (OM (Last . Just $ Texture (mkPigment sty) (mkFinish sty)) mempty)
 
-mkPigment :: Style V3 Double -> [P.Texture]
-mkPigment = toListOf (_sc . _Just . to (Pigment . convertColor))
+mkPigment :: Style V3 Double -> Last VColor
+mkPigment = Last . fmap convertColor . view _sc
 
-mkFinish :: Style V3 Double -> P.Texture
-mkFinish sty = Finish . catMaybes $ [
-  TAmbient   <$> sty ^. _ambient,
-  TDiffuse   <$> sty ^. _diffuse,
-  TSpecular  <$> hl  ^? _Just . specularIntensity,
-  TRoughness <$> hl  ^? _Just . specularSize
-  ] where hl = sty ^. _highlight
+  -- toListOf (_sc . _Just . to (Pigment . convertColor))
+
+mkFinish :: Style V3 Double -> TFinish
+mkFinish sty = TFinish
+               (Last $ sty ^. _ambient)
+               (Last $ sty ^. _diffuse)
+               (Last $ hl  ^? _Just . specularIntensity)
+               (Last $ hl  ^? _Just . specularSize)
+  where hl = sty ^. _highlight

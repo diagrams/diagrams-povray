@@ -1,7 +1,7 @@
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE RankNTypes                 #-}
-{-# LANGUAGE TemplateHaskell            #-}
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE RankNTypes           #-}
+{-# LANGUAGE TemplateHaskell      #-}
+{-# LANGUAGE TypeFamilies         #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 
 -----------------------------------------------------------------------------
@@ -18,10 +18,13 @@
 -----------------------------------------------------------------------------
 module Diagrams.Backend.POVRay.Syntax where
 
-import Text.PrettyPrint.HughesPJ
-import Diagrams.ThreeD.Types
+import           Diagrams.ThreeD.Types
+import           Text.PrettyPrint.HughesPJ
+import qualified Text.PrettyPrint.HughesPJ as PP
 
-import Control.Lens
+import           Control.Lens
+import           Data.Maybe
+import           Data.Monoid               (Last (..))
 
 ------------------------------------------------------------
 -- Pretty-printing
@@ -67,7 +70,7 @@ type Vector = V3 Double
 instance SDL Vector where
   toSDL (V3 x y z) = text "<" <> hsep (punctuate comma (map toSDL [x,y,z])) <> text ">"
 
-data VColor = RGB Vector
+newtype VColor = RGB Vector deriving (Show, Eq)
 
 instance SDL VColor where
   toSDL (RGB v) = text "rgb" <+> toSDL v
@@ -134,15 +137,24 @@ instance SDL Object where
   toSDL (OFiniteSolid fs) = toSDL fs
   toSDL (OLight l)        = toSDL l
 
-data ObjectModifier = OMTexture [Texture]
-                    | OMTransf TMatrix
+data ObjectModifier = OM {
+  omTexture :: Last Texture,
+  omTransf  :: Last TMatrix
+  }
+
+instance Monoid ObjectModifier where
+  mempty = OM mempty mempty
+  mappend (OM a1 b1) (OM a2 b2) = OM (mappend a1 a2) (mappend b1 b2)
 
 instance SDL ObjectModifier where
-  toSDL (OMTexture p) = block "texture" $ map toSDL p
-  toSDL (OMTransf m)  = toSDL m
+  toSDL om = vcat [
+    lastToSDL "" $ omTexture om,
+    lastToSDL "" $ omTransf om
+                  ]
 
 -- should be a list of 12 doubles
 data TMatrix = TMatrix [Double]
+             deriving Show
 
 instance SDL TMatrix where
   toSDL (TMatrix ds) = text "matrix <"
@@ -150,35 +162,60 @@ instance SDL TMatrix where
                        <> text ">"
 
 -- May support more pigment & texture options in the future.
-data Texture = Pigment VColor | Finish [TFinish]
+data Texture = Texture (Last VColor) TFinish
+             deriving (Show, Eq)
 
-data TFinish = TAmbient Double | TDiffuse Double
-             | TSpecular Double | TRoughness Double
+instance Monoid Texture where
+  mempty = Texture mempty mempty
+  mappend (Texture c1 f1) (Texture c2 f2) =
+    Texture (mappend c1 c2) (mappend f1 f2)
+
+data TFinish = TFinish {
+  tAmbient   :: Last Double,  -- POVRay allows a color here, instead of white light
+  tDiffuse   :: Last Double,
+  tSpecular  :: Last Double,
+  tRoughness :: Last Double
+  } deriving (Show, Eq)
+
+instance Monoid TFinish where
+  mempty = TFinish mempty mempty mempty mempty
+  mappend (TFinish a1 d1 s1 r1) (TFinish a2 d2 s2 r2) =
+    TFinish (mappend a1 a2) (mappend d1 d2) (mappend s1 s2) (mappend r1 r2)
+
+lastToSDL :: SDL a => String -> Last a -> Doc
+lastToSDL s x = case getLast x of
+  Nothing -> mempty
+  Just x' -> text s <+> toSDL x'
 
 instance SDL Texture where
-    toSDL (Pigment c) = block "pigment" [toSDL c]
-    toSDL (Finish  f) = block "finish" $ map toSDL f
+  toSDL t | t == mempty = mempty
+  toSDL (Texture vc finish) = block "texture" $ case getLast vc of
+    Nothing -> [toSDL finish]
+    Just c -> [block "pigment" [toSDL c], toSDL finish]
 
 instance SDL TFinish where
-    toSDL (TAmbient a)   = text "ambient" <+> toSDL a
-    toSDL (TDiffuse d)   = text "diffuse" <+> toSDL d
-    toSDL (TSpecular s)  = text "specular" <+> toSDL s
-    toSDL (TRoughness r) = text "roughness" <+> toSDL r
+  toSDL finish
+    | finish == mempty = mempty
+    | otherwise = block "finish"  $
+                  [ lastToSDL "ambient" $ tAmbient finish
+                  , lastToSDL "diffuse" $ tDiffuse finish
+                  , lastToSDL "specular" $ tSpecular finish
+                  , lastToSDL "roughness" $ tRoughness finish]
 
 ------------------------------------------------------------
 -- Finite solids
 ------------------------------------------------------------
 
-data FiniteSolid = Sphere Vector Double [ObjectModifier]
-                 | Box Vector Vector [ObjectModifier]
-                 | Cone Vector Double Vector Double Bool [ObjectModifier]
+data FiniteSolid = Sphere Vector Double ObjectModifier
+                 | Box Vector Vector ObjectModifier
+                 | Cone Vector Double Vector Double Bool ObjectModifier
 
 instance SDL FiniteSolid where
-  toSDL (Sphere c r mods) = block "sphere" (cr : map toSDL mods)
+  toSDL (Sphere c r mods) = block "sphere" [cr,  toSDL mods]
     where cr = toSDL c <> comma <+> toSDL r
-  toSDL (Box p1 p2 mods) = block "box" (corners : map toSDL mods)
+  toSDL (Box p1 p2 mods) = block "box" [corners, toSDL mods]
     where corners = toSDL p1 <> comma <+> toSDL p2
-  toSDL (Cone p1 r1 p2 r2 o mods) = block "cone" (geom : open : map toSDL mods) where
+  toSDL (Cone p1 r1 p2 r2 o mods) = block "cone" [geom, open, toSDL mods] where
     open = if o then text " open" else empty
     geom = toSDL p1 <> comma <+> toSDL r1 <> comma <+>
            toSDL p2 <> comma <+> toSDL r2
@@ -200,17 +237,17 @@ instance SDL LightModifier where
 
 makePrisms ''SceneItem
 makePrisms ''Object
-makePrisms ''ObjectModifier
+-- makePrisms ''ObjectModifier
 
-getMods :: FiniteSolid -> [ObjectModifier]
+getMods :: FiniteSolid -> ObjectModifier
 getMods (Sphere _ _ ms)     = ms
 getMods (Box _ _ ms)        = ms
 getMods (Cone _ _ _ _ _ ms) = ms
 
-setMods :: FiniteSolid -> [ObjectModifier] -> FiniteSolid
+setMods :: FiniteSolid -> ObjectModifier -> FiniteSolid
 setMods (Sphere v r _) new         = Sphere v r new
 setMods (Box p1 p2 _) new          = Box p1 p2 new
 setMods (Cone p1 r1 p2 r2 o _) new = Cone p1 r1 p2 r2 o new
 
-mods :: Lens' FiniteSolid [ObjectModifier]
+mods :: Lens' FiniteSolid ObjectModifier
 mods = lens getMods setMods
