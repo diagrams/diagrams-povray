@@ -21,7 +21,6 @@ module Diagrams.Backend.POVRay
   ) where
 
 import           Control.Lens                   (view)
-import           Data.Maybe
 import           Data.Monoid                    (Last (..))
 import           Data.Tree
 import           Data.Typeable
