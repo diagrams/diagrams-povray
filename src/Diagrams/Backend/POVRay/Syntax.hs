@@ -19,9 +19,12 @@
 module Diagrams.Backend.POVRay.Syntax where
 
 import           Diagrams.ThreeD.Types
+
 import           Text.PrettyPrint.HughesPJ
+import qualified Text.PrettyPrint.HughesPJ as PP
 
 import           Control.Lens
+import           Data.Maybe
 import           Data.Monoid               (Last (..))
 
 ------------------------------------------------------------
@@ -80,6 +83,7 @@ instance SDL VColor where
 -- | Top-level items that can occur in a scene.
 data SceneItem = SICamera CameraType [CameraItem]
                | SIObject Object
+               deriving Show
 
 instance SDL SceneItem where
   toSDL (SICamera cType cItems) = block "camera"
@@ -92,12 +96,14 @@ instance SDL SceneItem where
 
 data CameraItem = CIVector CameraVector
                 | CIModifier CameraModifier
+                deriving Show
 
 instance SDL CameraItem where
   toSDL (CIVector cv)   = toSDL cv
   toSDL (CIModifier cm) = toSDL cm
 
 data CameraType = Perspective | Orthographic  -- TODO add more types?
+                deriving Show
 
 
 data CameraVector = CVLocation  Vector
@@ -105,6 +111,7 @@ data CameraVector = CVLocation  Vector
                   | CVUp        Vector
                   | CVDirection Vector
                   | CVSky       Vector
+                  deriving Show
 
 instance SDL CameraType where
   toSDL Perspective = empty
@@ -119,6 +126,7 @@ instance SDL CameraVector where
 
 data CameraModifier = CMLookAt Vector
                     | CMAngle Double -- degrees
+                    deriving Show
 
 instance SDL CameraModifier where
   toSDL (CMLookAt v) = text "look_at" <+> toSDL v
@@ -130,15 +138,16 @@ instance SDL CameraModifier where
 
 data Object = OFiniteSolid FiniteSolid
             | OLight LightSource
+            deriving Show
 
 instance SDL Object where
   toSDL (OFiniteSolid fs) = toSDL fs
   toSDL (OLight l)        = toSDL l
 
 data ObjectModifier = OM {
-  omTexture :: Last Texture,
+  omTexture :: Texture,
   omTransf  :: Last TMatrix
-  }
+  } deriving Show
 
 instance Monoid ObjectModifier where
   mempty = OM mempty mempty
@@ -146,7 +155,7 @@ instance Monoid ObjectModifier where
 
 instance SDL ObjectModifier where
   toSDL om = vcat [
-    lastToSDL "" $ omTexture om,
+    toSDL $ omTexture om,
     lastToSDL "" $ omTransf om
                   ]
 
@@ -207,6 +216,11 @@ instance SDL TFinish where
 data FiniteSolid = Sphere Vector Double ObjectModifier
                  | Box Vector Vector ObjectModifier
                  | Cone Vector Double Vector Double Bool ObjectModifier
+                 | Union [FiniteSolid] ObjectModifier -- probably not what you want
+                 | Merge [FiniteSolid] ObjectModifier -- real CSG union
+                 | Intersection [FiniteSolid] ObjectModifier
+                 | Difference [FiniteSolid] ObjectModifier
+                 deriving Show
 
 instance SDL FiniteSolid where
   toSDL (Sphere c r mods) = block "sphere" [cr,  toSDL mods]
@@ -217,18 +231,28 @@ instance SDL FiniteSolid where
     open = if o then text " open" else empty
     geom = toSDL p1 <> comma <+> toSDL r1 <> comma <+>
            toSDL p2 <> comma <+> toSDL r2
+  toSDL (Union solids mods) =
+      block "union" $ map toSDL solids ++ [toSDL mods]
+  toSDL (Merge solids mods) =
+      block "merge" $ map toSDL solids ++ [toSDL mods]
+  toSDL (Intersection solids mods) =
+      block "intersection" $ map toSDL solids ++ [toSDL mods]
+  toSDL (Difference solids mods) =
+      block "difference" $ map toSDL solids ++ [toSDL mods]
 
 ------------------------------------------------------------
 -- Light sources
 ------------------------------------------------------------
 
 data LightSource = LightSource Vector VColor [LightModifier]
+                 deriving Show
 
 instance SDL LightSource where
   toSDL (LightSource loc c mods) = block "light_source" (lc : map toSDL mods)
     where lc = toSDL loc <> comma <+> toSDL c
 
 data LightModifier = Parallel Vector
+                   deriving Show
 
 instance SDL LightModifier where
     toSDL (Parallel v) = text "parallel" $$ text "point_at" <+> toSDL v
@@ -241,11 +265,19 @@ getMods :: FiniteSolid -> ObjectModifier
 getMods (Sphere _ _ ms)     = ms
 getMods (Box _ _ ms)        = ms
 getMods (Cone _ _ _ _ _ ms) = ms
+getMods (Union _ ms) = ms
+getMods (Merge _ ms) = ms
+getMods (Intersection _ ms) = ms
+getMods (Difference _ ms) = ms
 
 setMods :: FiniteSolid -> ObjectModifier -> FiniteSolid
 setMods (Sphere v r _) new         = Sphere v r new
 setMods (Box p1 p2 _) new          = Box p1 p2 new
 setMods (Cone p1 r1 p2 r2 o _) new = Cone p1 r1 p2 r2 o new
+setMods (Union fs _) new = Union fs new
+setMods (Merge fs _) new = Merge fs new
+setMods (Intersection fs _) new = Intersection fs new
+setMods (Difference fs _) new = Difference fs new
 
 mods :: Lens' FiniteSolid ObjectModifier
 mods = lens getMods setMods
