@@ -21,10 +21,8 @@ module Diagrams.Backend.POVRay.Syntax where
 import           Diagrams.ThreeD.Types
 
 import           Text.PrettyPrint.HughesPJ
-import qualified Text.PrettyPrint.HughesPJ as PP
 
 import           Control.Lens
-import           Data.Maybe
 import           Data.Monoid               (Last (..))
 
 ------------------------------------------------------------
