@@ -23,7 +23,8 @@ import           Diagrams.ThreeD.Types
 import           Text.PrettyPrint.HughesPJ
 
 import           Control.Lens
-import           Data.Monoid               (Last (..))
+
+import           Data.Monoid hiding ((<>))
 
 ------------------------------------------------------------
 -- Pretty-printing
