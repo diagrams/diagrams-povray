@@ -29,5 +29,5 @@ Library
                      containers >= 0.3 && < 0.6,
                      pretty >= 1.0.1.2 && < 1.2,
                      colour >= 2.3 && < 2.4,
-                     lens >= 4.0 && < 4.14
+                     lens >= 4.0 && < 4.16
   Default-language:  Haskell2010
