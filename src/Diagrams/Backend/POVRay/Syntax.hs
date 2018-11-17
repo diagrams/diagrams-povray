@@ -18,13 +18,15 @@
 -----------------------------------------------------------------------------
 module Diagrams.Backend.POVRay.Syntax where
 
-import           Diagrams.ThreeD.Types
+import           Geometry.ThreeD.Types
 
 import           Text.PrettyPrint.HughesPJ
 
 import           Control.Lens
 
 import           Data.Monoid hiding ((<>))
+import Prelude hiding ((<>))
+import qualified Prelude
 
 ------------------------------------------------------------
 -- Pretty-printing
@@ -148,6 +150,9 @@ data ObjectModifier = OM {
   omTransf  :: Last TMatrix
   } deriving Show
 
+instance Semigroup ObjectModifier where
+  (<>) = mappend
+
 instance Monoid ObjectModifier where
   mempty = OM mempty mempty
   mappend (OM a1 b1) (OM a2 b2) = OM (mappend a1 a2) (mappend b1 b2)
@@ -171,6 +176,9 @@ instance SDL TMatrix where
 data Texture = Texture (Last VColor) TFinish
              deriving (Show, Eq)
 
+instance Semigroup Texture where
+  (<>) = mappend
+
 instance Monoid Texture where
   mempty = Texture mempty mempty
   mappend (Texture c1 f1) (Texture c2 f2) =
@@ -182,6 +190,9 @@ data TFinish = TFinish {
   tSpecular  :: Last Double,
   tRoughness :: Last Double
   } deriving (Show, Eq)
+
+instance Semigroup TFinish where
+  (<>) = mappend
 
 instance Monoid TFinish where
   mempty = TFinish mempty mempty mempty mempty

@@ -1,33 +1,33 @@
-Name:                diagrams-povray
-Version:             0.1
-Synopsis:            Persistence Of Vision raytracer backend for diagrams EDSL
-Description:         This package provides a modular backend for rendering 3D
+name:                diagrams-povray
+version:             2.0
+synopsis:            Persistence Of Vision raytracer backend for diagrams EDSL
+description:         This package provides a modular backend for rendering 3D
                      diagrams created with the diagrams EDSL to the input 
                      format of the POV-Ray raytracer.  The main point of entry
                       is `doRender`, which returns a string in POV-Ray format.
     
-Homepage:            http://projects.haskell.org/diagrams
-License:             BSD3
-License-file:        LICENSE
-Author:              Brent Yorgey
-Maintainer:          diagrams-discuss@googlegroups.com
-Bug-reports:         http://github.com/diagrams/diagrams-povray/issues
-Category:            Graphics
-Build-type:          Simple
-Cabal-version:       >=1.10
-Tested-with:         GHC == 7.6.3, GHC == 7.8.2
-Source-repository head
+homepage:            http://projects.haskell.org/diagrams
+license:             BSD3
+license-file:        LICENSE
+author:              Brent Yorgey
+maintainer:          diagrams-discuss@googlegroups.com
+bug-reports:         http://github.com/diagrams/diagrams-povray/issues
+category:            Graphics
+build-type:          Simple
+cabal-version:       >=1.10
+tested-with:         GHC == 7.6.3, GHC == 7.8.2
+source-repository head
   type:     git
   location: http://github.com/diagrams/diagrams-povray.git
 
-Library
-  Exposed-modules:   Diagrams.Backend.POVRay, Diagrams.Backend.POVRay.Syntax
-  Hs-source-dirs:    src
-  Build-depends:     base >= 4.2 && < 4.9,
-                     diagrams-core >= 1.3 && < 1.5,
-                     diagrams-lib >= 1.3 && < 1.5,
-                     containers >= 0.3 && < 0.6,
-                     pretty >= 1.0.1.2 && < 1.2,
-                     colour >= 2.3 && < 2.4,
-                     lens >= 4.0 && < 4.16
-  Default-language:  Haskell2010
+library
+  exposed-modules:   Diagrams.Backend.POVRay, Diagrams.Backend.POVRay.Syntax
+  hs-source-dirs:    src
+  build-depends:     base,
+                     diagrams,
+                     geometry,
+                     containers,
+                     pretty,
+                     colour,
+                     lens
+  default-language:  Haskell2010
