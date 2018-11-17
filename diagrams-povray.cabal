@@ -21,12 +21,16 @@ source-repository head
   location: http://github.com/diagrams/diagrams-povray.git
 
 library
-  exposed-modules:   Diagrams.Backend.POVRay, Diagrams.Backend.POVRay.Syntax
+  exposed-modules:
+    Diagrams.Backend.POVRay
+    Diagrams.Backend.POVRay.Run
+    Diagrams.Backend.POVRay.Syntax
   hs-source-dirs:    src
   build-depends:     base,
                      diagrams,
                      geometry,
                      containers,
+                     process,
                      pretty,
                      colour,
                      lens
