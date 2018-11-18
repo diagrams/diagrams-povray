@@ -18,31 +18,40 @@
 --
 -----------------------------------------------------------------------------
 module Diagrams.Backend.POVRay.Run
-  ( POVRayOptions (..)
+  ( PovOpts (..)
   , runPovray
   ) where
 
 import System.Process
 import System.Exit
+import System.IO.Temp
 
-data POVRayOptions
+import Data.ByteString (ByteString)
+import qualified Data.ByteString as BS
+import System.FilePath
+
+data PovOpts = PovOpts
 
 povrayPath :: FilePath
 povrayPath = "povray"
 
-runPovray :: POVRayOptions -> FilePath -> IO ()
-runPovray opts path = do
-  let povrayArgs = ["+A", path]
-      pro = (proc povrayPath povrayArgs)
-        { std_in  = NoStream
-        , std_out = CreatePipe
-        , std_err = CreatePipe
-        }
+runPovray
+  :: PovOpts
+  -> String
+   -- ^ povray source
+  -> IO (String, Either String ByteString)
+  -- ^ stdout (either stderr or result)
+runPovray opts source =
+  withSystemTempDirectory "povray" $ \tempDir -> do
+    let sourceFile = tempDir </> "source.pov"
+    writeFile sourceFile source
+    let resultFile = tempDir </> "source.png"
+    let povrayArgs = ["+A", sourceFile]
+        pro = proc povrayPath povrayArgs
 
-  (ec, out, err) <- readCreateProcessWithExitCode pro ""
+    (ec, out, err) <- readCreateProcessWithExitCode pro ""
 
-  case ec of
-    ExitSuccess   -> pure ()
-    ExitFailure e -> do
-      putStrLn $ "povray failure: " <> show e
-      putStrLn err
+    res <- case ec of
+      ExitSuccess   -> Right <$> BS.readFile resultFile
+      ExitFailure e -> pure (Left err)
+    pure (out, res)
